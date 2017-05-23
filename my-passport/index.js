@@ -1,5 +1,7 @@
 const passport = require("passport");  
 const passportJWT = require("passport-jwt");
+const co = require('co');
+
 const dbX = require('../db');
 const users = [
   {
@@ -9,32 +11,27 @@ const users = [
     "entityId": "12345"
   }
 ];
-const cfg = {  
-  jwtSecret: "MyS3cr3tK3Y",
-  jwtSession: {
-    session: false
-  }
-}; 
+
+const config = require('../config');
 const ExtractJwt = passportJWT.ExtractJwt;  
 const Strategy = passportJWT.Strategy;  
-const params = {  
-  secretOrKey: cfg.jwtSecret,
-  jwtFromRequest: ExtractJwt.fromAuthHeader()
+const options = {  
+  secretOrKey: config.jwtSecret,
+  // jwtFromRequest: ExtractJwt.fromAuthHeader()
+  jwtFromRequest: ExtractJwt.fromAuthHeaderWithScheme('Bearer')
 };
 
 module.exports = function() {  
-  const strategy = new Strategy(params, function(payload, done) {
-    dbX.usersColl.findOne({id: payload.id}, '-password').then(user => {
-      if (user) {
-        done(null, user);
-      } else {
-        done(null, false);
-        // or you could create a new account 
-      }
-    }).catch(err => {
-      return done(err, false);
-    }).then(() => db.close());
-      // const user = users[payload.id] || null;
+  const strategy = new Strategy(options, function(payload, done) {
+    co(function*() {
+      const db = yield dbX.dbPromise;
+      const userFound = yield db.collection('users').findOne({id: payload.id});
+      if (!userFound) done(null, false);
+      done(null, userFound);
+      yield db.close();
+    }).catch(function(err) {
+      console.log(err.stack);
+    });
   });
   passport.use(strategy);
   return {
@@ -42,7 +39,7 @@ module.exports = function() {
       return passport.initialize();
     },
     authenticate: function() {
-      return passport.authenticate("jwt", cfg.jwtSession);
+      return passport.authenticate("jwt", config.jwtSession);
     }
   };
 };

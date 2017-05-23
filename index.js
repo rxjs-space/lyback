@@ -1,13 +1,56 @@
 const express = require('express');  
 const bodyParser = require('body-parser');
-const loginApi = require('./api/login');
+const login = require('./login');
+const api = require('./api');
 const app = express();
 const port = process.env.PORT || 3001;
+const myPassport = require('./my-passport')();
+
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+app.use(myPassport.initialize());
 
-app.use('/login', loginApi);
+// Error handling
+// app.use( function( error, request, response, next ) {
+//   if( ! error ) {
+//     return next();
+//   }
+//   response.send( error.msg, error.errorCode );
+// });
+
+
+// const co = require('co');
+// const acl = require('acl');
+// const dbX = require('./db');
+// let aclInstance;
+
+// co(function*() {
+//   // Connection URL
+//   // Use connect method to connect to the Server
+//   const db = yield dbX.dbPromise;
+//   aclInstance = new acl(new acl.mongodbBackend(db, 'acl_'));
+//   // aclInstance.allow('user', 'parts', 'view').then(data => {
+//   //   console.log('data after allow is ', data);
+//   // });
+//   // aclInstance.addUserRoles('kenisaige', 'user');
+//   // // aclInstance.addRoleParents('admin', 'user');
+//   yield aclInstance.isAllowed('kenisaige', 'parts', 'view', (err, res) => {
+//     console.log('error after isAllowed is', err);
+//     if (res) {
+//       console.log('user kenisaige is allowed to view parts');
+//     }
+//   })  
+//   // Close the connection
+//   yield db.close();
+// }).catch(function(err) {
+//   console.log(err.stack);
+// });
+
+
+
+app.use('/login', login);
+app.use('/api', myPassport.authenticate(), api);
 
 // app.get('/', function(req, res) {  
 //     res.json({
@@ -39,6 +82,9 @@ const user0 = {
 //   })
 //   .then(() => db.close());
 
+
+// const bcrypt = require('bcrypt');
+// const saltRounds = 10;
 
 // bcrypt.hash(user0.password, saltRounds).then(function(hash) {
 //     // Store hash in your password DB.
