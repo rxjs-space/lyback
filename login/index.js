@@ -20,7 +20,7 @@ router.post('/', function(req, res) {
     const passwordMatch = yield bcrypt.compare(password0, userFound.password);
     if (!passwordMatch) res.sendStatus(401);
     const payload = {
-      _id: userFound._id,
+      _id: userFound._id.toHexString(),
       username: userFound.username
     };
     const token = jwt.encode(payload, config.jwtSecret);
@@ -30,7 +30,7 @@ router.post('/', function(req, res) {
     // Close the connection
     yield db.close();
   }).catch(function(err) {
-    console.log(err.stack);
+    return done(err);
   });
 });
 
