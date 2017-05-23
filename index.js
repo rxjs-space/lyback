@@ -13,7 +13,7 @@ app.use(bodyParser.json());
 app.use(myPassport.initialize());
 
 app.use('/login', login);
-// app.use('/api', myPassport.authenticate(), api);
+app.use('/api', myPassport.authenticate(), api);
 
 app.use(errorHandler);
 // app.get('/', function(req, res) {  

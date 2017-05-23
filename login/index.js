@@ -14,7 +14,8 @@ router.post('/', function(req, res) {
   const username0 = req.body.username;
   const password0 = req.body.password;
   co(function*() {
-    const db = yield dbX.dbPromise;
+    // const db = yield dbX.dbPromise;
+    const db = dbX.db;
     const userFound = yield db.collection('users').findOne({username: username0});
     if (!userFound) res.sendStatus(401);
     const passwordMatch = yield bcrypt.compare(password0, userFound.password);
@@ -28,7 +29,7 @@ router.post('/', function(req, res) {
       token
     })
     // Close the connection
-    yield db.close();
+    // yield db.close();
   }).catch(function(err) {
     return done(err);
   });

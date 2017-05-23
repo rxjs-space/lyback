@@ -10,6 +10,7 @@ module.exports = {
     } else {
       return co(function*() {
         const db = yield dbX.dbPromise;
+        // const db = dbX.db;
         aclInstance = new acl(new acl.mongodbBackend(db, 'acl_'));
         return aclInstance;
       }).catch(err => {

@@ -21,7 +21,8 @@ router.post('/', function(req, res) {
   const roles = req.body.roles.split(' ');
   co(function*() {
     const hash = yield bcrypt.hash(password, saltRounds);
-    const db = yield dbX.dbPromise;
+    // const db = yield dbX.dbPromise;
+    const db = dbX.db;
     const itemToInsert = {
       username,
       password: hash
@@ -31,7 +32,7 @@ router.post('/', function(req, res) {
     const aclInstance = yield myAcl.aclInstancePromise;
     // yield aclInstance.allow('user', 'vehicles', 'view');
     yield aclInstance.addUserRoles(itemToInsert._id.toHexString(), roles)
-    db.close();
+    // db.close();
     res.json(insertFeedback);
   }).catch(function(err) {
     const errStr = JSON.stringify(err.stack);

@@ -25,14 +25,15 @@ const options = {
 module.exports = function() {  
   const strategy = new JwtStrategy(options, function(payload, done) {
     co(function*() {
-      const db = yield dbX.dbPromise;
+      // const db = yield dbX.dbPromise;
+      const db = dbX.db;
       const userFound = yield db.collection('users').findOne({_id: new ObjectId(payload._id)});
       if (!userFound) done(null, false);
       done(null, {
         _id: userFound._id,
         username: userFound.username
       });
-      yield db.close();
+      // yield db.close();
     }).catch(function(err) {
       return done(err);
     });
