@@ -10,6 +10,7 @@ const logJsonStr = require('../utils/log-json-string');
 
 
 router.post('/', function(req, res) {
+  console.log('authenticating');
   if (!req.body.username ||!req.body.password) res.status(401).send({
     message: 'Username or password is missing.'
   });
@@ -19,9 +20,9 @@ router.post('/', function(req, res) {
     // const db = yield dbX.dbPromise;
     const db = dbX.db;
     const userFound = yield db.collection('users').findOne({username: username0});
-    if (!userFound) res.sendStatus(401);
+    if (!userFound) return res.sendStatus(401);
     const passwordMatch = yield bcrypt.compare(password0, userFound.password);
-    if (!passwordMatch) res.sendStatus(401);
+    if (!passwordMatch) return res.sendStatus(401);
     const iat = Math.ceil(Date.now() / 1000);
     const exp = iat + 60 * 60 * 24;
     const payload = {
@@ -33,13 +34,15 @@ router.post('/', function(req, res) {
       }
     };
     const token = jwt.encode(payload, config.jwtSecret);
-    res.json({
+    return res.json({
       token
     })
-    // Close the connection
-    // yield db.close();
+
   }).catch(function(err) {
-    return done(err);
+    console.log(err);
+    return res.json({
+      err
+    });
   });
 });
 

@@ -1,6 +1,7 @@
 const express = require('express');  
 const bodyParser = require('body-parser');
-const login = require('./login');
+const cors = require('cors');
+const authenticate = require('./authenticate');
 const api = require('./api');
 const app = express();
 const port = process.env.PORT || 3001;
@@ -17,6 +18,7 @@ app.use((req, res, next) => {
   return next();
 })
 
+app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(myPassport.initialize());
@@ -27,7 +29,7 @@ app.use(myPassport.initialize());
 //   console.log(req.flash('error'));
 //   next();
 // })
-app.use('/login', login);
+app.use('/authenticate', authenticate);
 app.use('/api', api);
 
 app.use(errorHandler);
