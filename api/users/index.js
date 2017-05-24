@@ -9,9 +9,6 @@ const dbX = require('../../db');
 const saltRounds = 10;
 
 router.post('/', function(req, res) {
-  // console.log(JSON.stringify(req.user), 'posting on /users');
-  /* only this user can add a user */
-  if (req.user._id.toHexString() !== '5923b7c1ea44c850e43863dc') return res.sendStatus(401);
   if (!req.body.username ||!req.body.password) return res.status(400).json({
     message: 'Usernme or password is missing.'
   });
@@ -28,21 +25,17 @@ router.post('/', function(req, res) {
       password: hash
     }
     const insertFeedback = yield db.collection('users').insertOne(itemToInsert);
-    // const aclInstance = new acl(new acl.mongodbBackend(db, 'acl_'));
     const aclInstance = yield myAcl.aclInstancePromise;
-    // yield aclInstance.allow('user', 'vehicles', 'view');
     yield aclInstance.addUserRoles(itemToInsert._id.toHexString(), roles)
     // db.close();
-    res.json(insertFeedback);
+    res.json(itemToInsert);
   }).catch(function(err) {
     const errStr = JSON.stringify(err.stack);
     // if duplicate username ...
-    if (errStr.indexOf('E11000')) {return res.status(400).json({
+    if (errStr.indexOf('E11000')) return res.status(400).json({
       message: 'Duplicate username.'
-    })} else {
-      return res.json(err.stack);
-    }
-    // console.log(err.stack);
+    });
+    return res.json(err.stack);
   });
 });
 

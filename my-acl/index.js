@@ -24,11 +24,13 @@ module.exports = {
       co(function*() {
         const aclInstance = yield self.aclInstancePromise;
         const id = req.user._id.toHexString();
+        // aclInstance.allow('admin', '/api/users', '*');
+        // aclInstance.allow('member', 'blogs', ['get', 'post', 'put'])
         // acl.addUserRoles('joed', 'guest')
         // yield aclInstance.removeUserRoles(id, 'user');
         // yield aclInstance.addUserRoles(id, 'admin');
         // yield aclInstance.addRoleParents('admin', ['user']);
-        console.log('accessing', req.originalUrl);
+        console.log(req.user.username, 'accessing', req.originalUrl);
         return aclInstance.middleware(0, id)(req, res, next);
       }).catch(err => {
         return res.json(err.stack);

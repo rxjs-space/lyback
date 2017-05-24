@@ -10,7 +10,9 @@ const logJsonStr = require('../utils/log-json-string');
 
 
 router.post('/', function(req, res) {
-  if (!req.body.username ||!req.body.password) res.sendStatus(401);
+  if (!req.body.username ||!req.body.password) res.status(401).send({
+    message: 'Username or password is missing.'
+  });
   const username0 = req.body.username;
   const password0 = req.body.password;
   co(function*() {
@@ -20,9 +22,15 @@ router.post('/', function(req, res) {
     if (!userFound) res.sendStatus(401);
     const passwordMatch = yield bcrypt.compare(password0, userFound.password);
     if (!passwordMatch) res.sendStatus(401);
+    const iat = Math.ceil(Date.now() / 1000);
+    const exp = iat + 60 * 60 * 24;
     const payload = {
-      _id: userFound._id.toHexString(),
-      username: userFound.username
+      iat,
+      exp,
+      sub: {
+        _id: userFound._id.toHexString(),
+        username: userFound.username
+      }
     };
     const token = jwt.encode(payload, config.jwtSecret);
     res.json({

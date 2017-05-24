@@ -27,13 +27,14 @@ module.exports = function() {
     co(function*() {
       // const db = yield dbX.dbPromise;
       const db = dbX.db;
-      const userFound = yield db.collection('users').findOne({_id: new ObjectId(payload._id)});
-      if (!userFound) done(null, false);
-      done(null, {
+      const userFound = yield db.collection('users').findOne({_id: new ObjectId(payload.sub._id)});
+      // const expired = Math.ceil(Date.now() / 1000) >= payload.exp*1;
+      if (!userFound) return done(null, false, {name: 'UserNotFoundError', message: `No such user as ${payload.sub.username}.`});
+      // if (expired) return done(null, false, {err: 'Token Expired', message: `The token has expired. Please login again.`});
+      return done(null, {
         _id: userFound._id,
         username: userFound.username
-      });
-      // yield db.close();
+      }, {message: 'x'});
     }).catch(function(err) {
       return done(err);
     });
@@ -43,8 +44,23 @@ module.exports = function() {
     initialize: function() {
       return passport.initialize();
     },
+    // authenticate: function() {
+    //   return passport.authenticate("jwt", config.jwtSession);
+    // },
     authenticate: function() {
-      return passport.authenticate("jwt", config.jwtSession);
+      return function(req, res, next) {
+        passport.authenticate("jwt", config.jwtSession, (err, user, info) => {
+          if (err) return next(err);
+          if (info && info.name === 'TokenExpiredError') return res.status(401).send({
+              info
+            })
+          if (info && info.name === 'UserNotFoundError') return res.status(401).send({
+            info
+          })
+          req.user = user;
+          next();
+        })(req, res, next);
+      }
     }
   };
 };
