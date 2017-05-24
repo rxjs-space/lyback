@@ -1,4 +1,6 @@
 ```javascript
+// departments: accounting, planning, production, sales, inventory
+// roles: admin -> supervisor -> user -> guest
 // resouces
 
 const vehicles = '/api/vehicles';

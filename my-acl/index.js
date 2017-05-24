@@ -9,8 +9,8 @@ module.exports = {
       return Promise.resolve(aclInstance);
     } else {
       return co(function*() {
-        const db = yield dbX.dbPromise;
-        // const db = dbX.db;
+        // const db = yield dbX.dbPromise;
+        const db = dbX.db;
         aclInstance = new acl(new acl.mongodbBackend(db, 'acl_'));
         return aclInstance;
       }).catch(err => {
@@ -24,7 +24,7 @@ module.exports = {
       co(function*() {
         const aclInstance = yield self.aclInstancePromise;
         const id = req.user._id.toHexString();
-        console.log(req.originalUrl);
+        console.log('accessing', req.originalUrl);
         return aclInstance.middleware(0, id)(req, res, next);
       }).catch(err => {
         return res.json(err.stack);

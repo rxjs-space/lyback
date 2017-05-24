@@ -21,6 +21,8 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(myPassport.initialize());
 
+
+
 app.use('/login', login);
 app.use('/api', myPassport.authenticate(), api);
 
