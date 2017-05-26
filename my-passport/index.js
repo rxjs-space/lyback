@@ -25,8 +25,8 @@ const options = {
 module.exports = function() {  
   const strategy = new JwtStrategy(options, function(payload, done) {
     co(function*() {
-      // const db = yield dbX.dbPromise;
-      const db = dbX.db;
+      const db = yield dbX.dbPromise;
+      // const db = dbX.db;
       const userFound = yield db.collection('users').findOne({_id: new ObjectId(payload.sub._id)});
       // const expired = Math.ceil(Date.now() / 1000) >= payload.exp*1;
       if (!userFound) return done(null, false, {name: 'UserNotFoundError', message: `No such user as ${payload.sub.username}.`});

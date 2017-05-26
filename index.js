@@ -9,6 +9,12 @@ const errorHandler = require('./error-handler');
 const dbX = require('./db');
 const myPassport = require('./my-passport')();
 
+// process.on('uncaughtException', (err) => {
+//   console.error('whoops! there was an error');
+//   console.log(err);
+// });
+
+
 app.use((req, res, next) => {
   if (!dbX.db) {
     return res.status(500).send({
@@ -34,7 +40,8 @@ app.use('/api', api);
 
 app.use(errorHandler);
 
-dbX.connect().then(() => {
+dbX.connect().then((db) => {
+  // db.close(); // to test for case where db connection is lost
   app.listen(port, function() {  
     console.log('listening on port', port);
   });

@@ -17,8 +17,8 @@ router.post('/', function(req, res) {
   const username0 = req.body.username;
   const password0 = req.body.password;
   co(function*() {
-    // const db = yield dbX.dbPromise;
-    const db = dbX.db;
+    const db = yield dbX.dbPromise;
+    // const db = dbX.db;
     const userFound = yield db.collection('users').findOne({username: username0});
     if (!userFound) return res.sendStatus(401);
     const passwordMatch = yield bcrypt.compare(password0, userFound.password);
@@ -39,8 +39,9 @@ router.post('/', function(req, res) {
     })
 
   }).catch(function(err) {
+    console.log('caught an error in authenticate');
     console.log(err);
-    return res.json({
+    return res.status(500).json({
       err
     });
   });

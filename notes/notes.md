@@ -44,3 +44,17 @@ IterateOver(paths, function(path, report) {
 }, PrintTotalSum);
 
 ```
+
+
+## error handling
+```js
+const myEmitter = new MyEmitter();
+
+process.on('uncaughtException', (err) => {
+  console.error('whoops! there was an error');
+});
+
+myEmitter.emit('error', new Error('whoops!'));
+// Prints: whoops! there was an error
+
+```

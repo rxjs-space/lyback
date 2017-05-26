@@ -9,8 +9,8 @@ module.exports = {
       return Promise.resolve(aclInstance);
     } else {
       return co(function*() {
-        // const db = yield dbX.dbPromise;
-        const db = dbX.db;
+        const db = yield dbX.dbPromise;
+        // const db = dbX.db;
         aclInstance = new acl(new acl.mongodbBackend(db, 'acl_'));
         return aclInstance;
       }).catch(err => {

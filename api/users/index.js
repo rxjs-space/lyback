@@ -18,8 +18,8 @@ router.post('/', function(req, res) {
   const roles = req.body.roles.split(' ');
   co(function*() {
     const hash = yield bcrypt.hash(password, saltRounds);
-    // const db = yield dbX.dbPromise;
-    const db = dbX.db;
+    const db = yield dbX.dbPromise;
+    // const db = dbX.db;
     const itemToInsert = {
       username,
       password: hash
