@@ -58,3 +58,5 @@ myEmitter.emit('error', new Error('whoops!'));
 // Prints: whoops! there was an error
 
 ```
+
+passport attach userInfo to req.user

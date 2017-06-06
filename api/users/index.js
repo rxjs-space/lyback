@@ -13,6 +13,7 @@ router.post('/', function(req, res) {
     message: 'Usernme or password is missing.'
   });
   /* consider adding verification for username and password */
+
   const username = req.body.username;
   const password = req.body.password;
   const roles = req.body.roles.split(' ');
@@ -22,7 +23,10 @@ router.post('/', function(req, res) {
     // const db = dbX.db;
     const itemToInsert = {
       username,
-      password: hash
+      password: hash,
+      createdBy: req.user,
+      createdAt: (new Date()).toISOString(),
+      isActive: true,
     }
     const insertFeedback = yield db.collection('users').insertOne(itemToInsert);
     const aclInstance = yield myAcl.aclInstancePromise;
@@ -35,8 +39,10 @@ router.post('/', function(req, res) {
     if (errStr.indexOf('E11000')) return res.status(400).json({
       message: 'Duplicate username.'
     });
-    return res.json(err.stack);
+    return res.status(500).json(err.stack);
   });
 });
+
+
 
 module.exports = router;

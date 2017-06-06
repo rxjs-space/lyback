@@ -2,12 +2,13 @@ const router = require('express').Router();
 const bcrypt = require('bcrypt');
 const jwt = require("jwt-simple"); 
 const co = require('co');
+const acl = require('acl');
 
 const dbX = require('../db');
 const config = require('../config');
 
 const logJsonStr = require('../utils/log-json-string');
-
+// const aclInstancePromise = require('../my-acl').aclInstancePromise;
 
 router.post('/', function(req, res) {
   console.log('authenticating');
@@ -23,6 +24,12 @@ router.post('/', function(req, res) {
     if (!userFound) return res.sendStatus(401);
     const passwordMatch = yield bcrypt.compare(password0, userFound.password);
     if (!passwordMatch) return res.sendStatus(401);
+    const aclInstance = new acl(new acl.mongodbBackend(db, 'acl_'));
+
+    // const aclInstance = yield aclInstancePromise;
+    const roles = yield aclInstance.userRoles(userFound._id.toHexString());
+    // console.log('roles are');
+    console.log(roles);
     const iat = Math.ceil(Date.now() / 1000);
     const exp = iat + 60 * 60 * 24;
     const payload = {

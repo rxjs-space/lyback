@@ -34,7 +34,7 @@ module.exports = function() {
       return done(null, {
         _id: userFound._id,
         username: userFound.username
-      }, {message: 'x'});
+      }, {message: 'cleared by passport'});
     }).catch(function(err) {
       return done(err);
     });
