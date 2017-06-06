@@ -29,7 +29,7 @@ router.post('/', function(req, res) {
     // const aclInstance = yield aclInstancePromise;
     const roles = yield aclInstance.userRoles(userFound._id.toHexString());
     // console.log('roles are');
-    console.log(roles);
+    // console.log(roles);
     const iat = Math.ceil(Date.now() / 1000);
     const exp = iat + 60 * 60 * 24;
     const payload = {
@@ -37,7 +37,8 @@ router.post('/', function(req, res) {
       exp,
       sub: {
         _id: userFound._id.toHexString(),
-        username: userFound.username
+        username: userFound.username,
+        roles
       }
     };
     const token = jwt.encode(payload, config.jwtSecret);
