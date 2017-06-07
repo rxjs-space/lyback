@@ -4,6 +4,7 @@ const products = require('./products');
 const users = require('./users');
 const roles = require('./roles');
 const tt = require('./tt');
+const brands = require('./brands');
 const myAcl = require('../my-acl');
 const myPassport = require('../my-passport')();
 
@@ -16,4 +17,5 @@ router.use('/products', products);
 router.use('/users', users);
 router.use('/roles', roles);
 router.use('/tt', tt);
+router.use('/brands', brands);
 module.exports = router;

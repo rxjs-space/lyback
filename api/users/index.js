@@ -16,7 +16,7 @@ router.post('/', function(req, res) {
 
   const username = req.body.username;
   const password = req.body.password;
-  const roles = req.body.roles.split(' ');
+  const roles = req.body.roles ? req.body.roles.split(' ') : [];
   co(function*() {
     const hash = yield bcrypt.hash(password, saltRounds);
     const db = yield dbX.dbPromise;
@@ -29,8 +29,10 @@ router.post('/', function(req, res) {
       isActive: true,
     }
     const insertFeedback = yield db.collection('users').insertOne(itemToInsert);
-    const aclInstance = yield myAcl.aclInstancePromise;
-    yield aclInstance.addUserRoles(itemToInsert._id.toHexString(), roles)
+    if (roles.length) {
+      const aclInstance = yield myAcl.aclInstancePromise;
+      yield aclInstance.addUserRoles(itemToInsert._id.toHexString(), roles)
+    }
     // db.close();
     res.json(itemToInsert);
   }).catch(function(err) {

@@ -11,6 +11,7 @@
     "connect-flash": "^0.1.1",
     "cors": "^2.8.3",
     "express": "^4.15.3",
+    "jsonpatch-to-mongodb": "^0.4.0",
     "jwt-simple": "^0.5.1",
     "mongodb": "^2.2.27",
     "passport": "^0.3.2",

@@ -2,6 +2,10 @@
 ```javascript
   aclInstance.allow('admin', '/api/users', '*');
   aclInstance.allow('admin', '/api/roles', '*');
+        // yield aclInstance.allow('operationOperator', '/api/vehicles', ['get', 'post']);
+        // yield aclInstance.allow('operationOperator', '/api/vehicles/one', ['get', 'patch']);
+        // yield aclInstance.allow('operationOperator', '/api/brands', ['get', 'post']);
+        // yield aclInstance.allow('operationOperator', '/api/tt/one', ['get']);
 ```
 
 
@@ -23,8 +27,8 @@ resources:
 /api/roles post get
 /api/roles/one patch get
 
-/api/vehicles
-/api/vehicles/one
+/api/vehicles post get(with field projection)
+/api/vehicles/one patch get
 
 /api/products
 /api/products/one
@@ -35,3 +39,5 @@ resources:
 /api/tt post
 /api/tt/types patch get
 /api/tt/titles patch get
+
+/api/brands post get

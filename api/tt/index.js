@@ -4,6 +4,7 @@ const co = require('co');
 const dbX = require('../../db');
 
 router.post('/', function(req, res) {
+  // for upsert a section in the tt (for example, create 'types', replace 'types')
   co(function*() {
     const db = yield dbX.dbPromise;
     const upsertOp = yield db.collection('tt').updateOne(

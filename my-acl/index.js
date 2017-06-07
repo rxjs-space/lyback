@@ -24,14 +24,20 @@ module.exports = {
       co(function*() {
         const aclInstance = yield self.aclInstancePromise;
         const id = req.user._id.toHexString();
-        // aclInstance.allow('admin', '/api/tt/one', '*');
-        // aclInstance.allow('admin', '/api/users', '*');
-        // aclInstance.allow('member', 'blogs', ['get', 'post', 'put'])
-        // acl.addUserRoles('joed', 'guest')
+        // yield aclInstance.allow('admin', '/api/vehicles', '*');
+        // yield aclInstance.allow('admin', '/api/vehicles/one', '*');
+        // yield aclInstance.allow('admin', '/api/users', '*');
+        // yield aclInstance.allow('member', 'blogs', ['get', 'post', 'put'])
+        // yield acl.addUserRoles('joed', 'guest')
         // yield aclInstance.removeUserRoles(id, 'user');
         // yield aclInstance.addUserRoles(id, 'admin');
-        // yield aclInstance.addRoleParents('admin', ['user']);
-        console.log(req.user.username, req.method, req.originalUrl);
+        yield aclInstance.addRoleParents('operationManager', ['operationOperator']);
+        // yield aclInstance.allow('operationOperator', '/api/vehicles', ['get', 'post']);
+        // yield aclInstance.allow('operationOperator', '/api/vehicles/one', ['get', 'patch']);
+        // yield aclInstance.allow('operationOperator', '/api/brands', ['get', 'post']);
+        // yield aclInstance.allow('operationOperator', '/api/tt/one', ['get']);
+
+        console.log(req.user.username, req.method, req.originalUrl, (new Date()).toISOString());
 
         /*
           middleware( [numPathComponents, userId, permissions] )
