@@ -66,17 +66,22 @@ router.get('/one', (req, res) => {
   }
   co(function*() {
     const db = yield dbX.dbPromise;
-    const docs = yield db.collection('vehicles').find({id: req.query.id}, {
+    const docs = yield db.collection('vehicles').find({id: req.query.id}/*, {
       '_id': 0,
       'createdAt': 0,
       'createdBy': 0,
       'modifiedAt': 0,
       'modifiedBy': 0
-    }).toArray();
+    }*/).toArray();
     if (!docs.length) {return res.status(400).json({
       message: `no doc whose id is ${req.query.id}`
     })}
-    res.send(docs[0]);
+    const vehicle = docs[0];
+    const userC = yield db.collection('users').find({_id: vehicle.createdBy}).toArray();
+    const userM = yield db.collection('users').find({_id: vehicle.modifiedBy}).toArray();
+    vehicle.createdBy = userC[0];
+    vehicle.modifiedBy = userM[0];
+    res.send(vehicle);
   }).catch((err) => {
     return res.status(500).json(err.stack);
   })
