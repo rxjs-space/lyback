@@ -81,7 +81,7 @@ router.get('/one', (req, res) => {
       message: `no doc whose id is ${req.query.vin}`
     })}
     const vehicle = docs[0];
-    if (JSON.parse(req.query.returnIDOnly)) {
+    if (req.query.returnIDOnly && JSON.parse(req.query.returnIDOnly)) {
       return res.json({
         _id: vehicle._id
       }); 
