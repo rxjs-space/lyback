@@ -26,6 +26,7 @@ router.post('/', (req, res) => {
     newVehicle.createdBy = req.user._id;
     patches.createdAt = (new Date()).toISOString();
     patches.createdBy = req.user._id;
+    patches.vin = newVehicle.vin;
     const patchResult = yield db.collection('vehiclePatches').insert(patches);
     const saveResult = yield db.collection('vehicles').insert(newVehicle);
     res.json(saveResult);
@@ -111,6 +112,7 @@ router.patch('/one', (req, res) => {
     const patches = {patches: req.body.patches};
     patches.createdAt = (new Date()).toISOString();
     patches.createdBy = req.user._id;
+    patches.vin = vin;
     const patchesToApply = toMongodb(req.body.patches);
     const patchResult = yield db.collection('vehiclePatches').insert(patches);
     const updateResult = yield db.collection('vehicles').updateOne(
