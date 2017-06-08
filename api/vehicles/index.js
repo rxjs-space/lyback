@@ -43,11 +43,12 @@ router.get('/', (req, res) => {
     const db = yield dbX.dbPromise;
     const docs = yield db.collection('vehicles').find({}, {
       'id': 1,
+      'vin': 1,
       'entranceDate': 1,
       'status': 1,
       'vehicle.plateNo': 1
     })
-    .sort([['entranceDate', -1], ['_id', -1]])
+    .sort([['_id', -1]])
     .toArray();
     res.send(docs);
   }).catch((err) => {
@@ -59,14 +60,14 @@ router.get('/', (req, res) => {
 })
 
 router.get('/one', (req, res) => {
-  if (!req.query.id) {
+  if (!req.query.vin) {
     return res.status(400).json({
       message: "insufficient parameters."
     })
   }
   co(function*() {
     const db = yield dbX.dbPromise;
-    const docs = yield db.collection('vehicles').find({id: req.query.id}/*, {
+    const docs = yield db.collection('vehicles').find({vin: req.query.vin}/*, {
       '_id': 0,
       'createdAt': 0,
       'createdBy': 0,
@@ -74,7 +75,7 @@ router.get('/one', (req, res) => {
       'modifiedBy': 0
     }*/).toArray();
     if (!docs.length) {return res.status(400).json({
-      message: `no doc whose id is ${req.query.id}`
+      message: `no doc whose id is ${req.query.vin}`
     })}
     const vehicle = docs[0];
     const userC = yield db.collection('users').find({_id: vehicle.createdBy}).toArray();
@@ -88,7 +89,8 @@ router.get('/one', (req, res) => {
 });
 
 router.patch('/one', (req, res) => {
-  if (!req.query.id) {
+  const vin = req.query.vin;
+  if (!vin) {
     return res.status(400).json({
       message: "insufficient parameters."
     })
@@ -102,7 +104,6 @@ router.patch('/one', (req, res) => {
 
   co(function*() {
     const db = yield dbX.dbPromise;
-    const id = req.body.id;
     req.body.patches.push(
       {op: 'replace', path: '/modifiedAt', value: (new Date()).toISOString()},
       {op: 'replace', path: '/modifiedBy', value: req.user._id}
@@ -113,7 +114,7 @@ router.patch('/one', (req, res) => {
     const patchesToApply = toMongodb(req.body.patches);
     const patchResult = yield db.collection('vehiclePatches').insert(patches);
     const updateResult = yield db.collection('vehicles').updateOne(
-      {id},
+      {vin},
       patchesToApply
     );
     res.json(updateResult);
@@ -136,13 +137,13 @@ router.patch('/one', (req, res) => {
   // res.send({message: 'ok'});
   // co(function*() {
   //   const db = yield dbX.dbPromise;
-  //   const docs = yield db.collection('vehicles').find({id: req.query.id}, {
+  //   const docs = yield db.collection('vehicles').find({id: req.query.vin}, {
   //     '_id': 0,
   //     'createdAt': 0,
   //     'createdBy': 0
   //   }).toArray();
   //   if (!docs.length) {return res.status(400).json({
-  //     message: `no doc whose id is ${req.query.id}`
+  //     message: `no doc whose id is ${req.query.vin}`
   //   })}
   //   res.send(docs[0]);
   // }).catch((err) => {
