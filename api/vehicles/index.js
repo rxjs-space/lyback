@@ -61,6 +61,8 @@ router.get('/', (req, res) => {
 })
 
 router.get('/one', (req, res) => {
+  // example query 
+  // /api/vehicles/one?vin=asdfa&returnIDOnly=true
   if (!req.query.vin) {
     return res.status(400).json({
       message: "insufficient parameters."
@@ -79,11 +81,18 @@ router.get('/one', (req, res) => {
       message: `no doc whose id is ${req.query.vin}`
     })}
     const vehicle = docs[0];
-    const userC = yield db.collection('users').find({_id: vehicle.createdBy}).toArray();
-    const userM = yield db.collection('users').find({_id: vehicle.modifiedBy}).toArray();
-    vehicle.createdBy = userC[0];
-    vehicle.modifiedBy = userM[0];
-    res.send(vehicle);
+    if (JSON.parse(req.query.returnIDOnly)) {
+      return res.json({
+        _id: vehicle._id
+      }); 
+    } else {
+      const userC = yield db.collection('users').find({_id: vehicle.createdBy}).toArray();
+      const userM = yield db.collection('users').find({_id: vehicle.modifiedBy}).toArray();
+      vehicle.createdBy = userC[0];
+      vehicle.modifiedBy = userM[0];
+      return res.send(vehicle);
+    }
+
   }).catch((err) => {
     return res.status(500).json(err.stack);
   })
