@@ -24,7 +24,7 @@ module.exports = {
       co(function*() {
         const aclInstance = yield self.aclInstancePromise;
         const id = req.user._id.toHexString();
-        // yield aclInstance.allow('admin', '/api/vehicles', '*');
+        // yield aclInstance.allow('admin', '/api/backup', '*');
         // yield aclInstance.allow('admin', '/api/vehicles/one', '*');
         // yield aclInstance.allow('admin', '/api/users', '*');
         // yield aclInstance.allow('member', 'blogs', ['get', 'post', 'put'])

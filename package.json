@@ -6,14 +6,18 @@
   "dependencies": {
     "acl": "^0.4.10",
     "bcrypt": "^1.0.2",
+    "bluebird": "^3.5.0",
     "body-parser": "^1.17.2",
     "co": "^4.6.0",
+    "co-foreach": "^1.1.1",
+    "compressing": "^1.1.0",
     "connect-flash": "^0.1.1",
     "cors": "^2.8.3",
     "express": "^4.15.3",
     "jsonpatch-to-mongodb": "^0.4.0",
     "jwt-simple": "^0.5.1",
     "mongodb": "^2.2.27",
+    "nodemailer": "^4.0.1",
     "passport": "^0.3.2",
     "passport-jwt": "^2.2.1"
   },

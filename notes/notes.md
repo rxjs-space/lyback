@@ -60,3 +60,7 @@ myEmitter.emit('error', new Error('whoops!'));
 ```
 
 passport attach userInfo to req.user
+
+
+## db backup
+mongodump --host ds161960.mlab.com -d longyundb --port 61960 --username timliu --password 2858880 --excludeCollectionsWithPrefix acl
