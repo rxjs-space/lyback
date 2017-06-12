@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const co = require('co');
+const toMongodb = require('jsonpatch-to-mongodb');
 
 const dbX = require('../../db');
 
@@ -30,20 +31,53 @@ router.get('/one', (req, res) => {
     if (!docs.length) {return res.status(400).json({
       message: `no doc whose name is ${req.query.name}`
     })}
-    res.send(docs[0].details);
+    res.send(docs[0]);
   }).catch((err) => {
     return res.status(500).json(err.stack);
   })
 });
 
 router.patch('/one', (req, res) => {
-  if (!req.body.name || !req.body.patches) {
+  const name = req.query.name;
+  if (!name) {
     return res.status(400).json({
       message: "insufficient parameters."
     })
   }
+  if (!req.body) {
+    return res.status(400).json({
+      message: 'no data provided.'
+    })
+  }
 
-  res.json(req.body);
+  co(function*() {
+    const db = yield dbX.dbPromise;
+    req.body.patches.push(
+      {op: 'replace', path: '/modifiedAt', value: (new Date()).toISOString()},
+      {op: 'replace', path: '/modifiedBy', value: req.user._id}
+    )
+    const patches = {patches: req.body.patches};
+    patches.createdAt = (new Date()).toISOString();
+    patches.createdBy = req.user._id;
+    patches.name = name;
+    const patchesToApply = toMongodb(req.body.patches);
+    console.log(req.body.patches);
+    console.log(patchesToApply);
+    const patchResult = yield db.collection('ttPatches').insert(patches);
+    const updateResult = yield db.collection('tt').updateOne(
+      {name},
+      patchesToApply
+    );
+    res.json(updateResult);
+    // console.log(patchesToApply);
+    // res.json({
+    //   message: 'ok'
+    // })
+  }).catch(err => {
+    return res.status(500).json(err.stack);
+  })
+
+  // res.json(req.query);
 })
 
 module.exports = router;

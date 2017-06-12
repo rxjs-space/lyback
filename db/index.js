@@ -29,6 +29,7 @@ module.exports = {
         console.log('reconnecting to db');
         db = yield MongoClient.connect(dbUrl);
         console.log('reconnected to db');
+        db.stats(v => console.log(JSON.stringify(v, null, 2)));
       }
       return db;
     }).catch(err => {

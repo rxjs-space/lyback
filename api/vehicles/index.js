@@ -123,6 +123,8 @@ router.patch('/one', (req, res) => {
     patches.createdBy = req.user._id;
     patches.vin = vin;
     const patchesToApply = toMongodb(req.body.patches);
+    console.log(req.body.patches);
+    console.log(patchesToApply);
     const patchResult = yield db.collection('vehiclePatches').insert(patches);
     const updateResult = yield db.collection('vehicles').updateOne(
       {vin},

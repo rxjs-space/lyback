@@ -14,7 +14,8 @@ module.exports = {
         aclInstance = new acl(new acl.mongodbBackend(db, 'acl_'));
         return aclInstance;
       }).catch(err => {
-        return res.json(err.stack);
+        console.log('err at aclInstancePromise', err);
+        return res.status(500).json(err.stack);
       })
     }
   },
@@ -31,13 +32,13 @@ module.exports = {
         // yield acl.addUserRoles('joed', 'guest')
         // yield aclInstance.removeUserRoles(id, 'user');
         // yield aclInstance.addUserRoles(id, 'admin');
-        yield aclInstance.addRoleParents('operationManager', ['operationOperator']);
+        // yield aclInstance.addRoleParents('operationManager', ['operationOperator']);
         // yield aclInstance.allow('operationOperator', '/api/vehicles', ['get', 'post']);
         // yield aclInstance.allow('operationOperator', '/api/vehicles/one', ['get', 'patch']);
         // yield aclInstance.allow('operationOperator', '/api/brands', ['get', 'post']);
         // yield aclInstance.allow('operationOperator', '/api/tt/one', ['get']);
 
-        console.log(req.user.username, req.method, req.originalUrl, (new Date()).toISOString());
+        console.log('acl middleware:', req.user.username, req.method, req.originalUrl, (new Date()).toISOString());
 
         /*
           middleware( [numPathComponents, userId, permissions] )
@@ -45,7 +46,8 @@ module.exports = {
         */
         return aclInstance.middleware(0, id)(req, res, next);
       }).catch(err => {
-        return res.json(err.stack);
+        console.log('err at acl middleware', err);
+        return res.status(500).json(err.stack);
       })
     }
   }
