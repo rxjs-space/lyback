@@ -52,7 +52,8 @@ router.get('/', (req, res) => {
       'vin': 1,
       'entranceDate': 1,
       'status': 1,
-      'vehicle.plateNo': 1
+      'vehicle.plateNo': 1,
+      'dismantling': 1
     })
     .sort([['_id', -1]])
     .toArray();

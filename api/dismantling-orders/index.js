@@ -79,6 +79,8 @@ router.post('/', (req, res) => {
     // after getting the _id of the dismantlingOrder, insert the patches with the _id
     patches.dismantlingOrderId = saveResult.insertedIds[0];
     const patchResult = yield db.collection('dismantlingOrderPatches').insert(patches);
+    // todo: mark the vehicle as dismantling
+    // todo: mark dismantlingOrder with markedAt
     res.json(saveResult);
     // res.json({
     //   ok: true
@@ -115,6 +117,8 @@ router.get('/one', (req, res) => {
 })
 
 router.patch('/one', (req, res) => {
+  // todo: when the dismantlingOrder if completed, mark the vehicle as dismantling = '0'
+  // todo: and then makr the dismantling with markedAt
   res.json({ok: true})
 })
 
