@@ -26,10 +26,7 @@ module.exports = {
         const aclInstance = yield self.aclInstancePromise;
         const id = req.user._id.toHexString();
         // yield aclInstance.allow('admin', '/api/backup', '*');
-        // yield aclInstance.allow('admin', '/api/vehicles/one', '*');
-        // yield aclInstance.allow('admin', '/api/users', '*');
-        // yield aclInstance.allow('member', 'blogs', ['get', 'post', 'put'])
-        // yield acl.addUserRoles('joed', 'guest')
+        yield aclInstance.allow('operationOperator', '/api/dismantling-orders', ['post']);
         // yield aclInstance.removeUserRoles(id, 'user');
         // yield aclInstance.addUserRoles(id, 'admin');
         // yield aclInstance.addRoleParents('operationManager', ['operationOperator']);

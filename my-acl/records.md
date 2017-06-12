@@ -6,6 +6,13 @@
         // yield aclInstance.allow('operationOperator', '/api/vehicles/one', ['get', 'patch']);
         // yield aclInstance.allow('operationOperator', '/api/brands', ['get', 'post']);
         // yield aclInstance.allow('operationOperator', '/api/tt/one', ['get']);
+        // yield aclInstance.allow('admin', '/api/backup', '*');
+        // yield aclInstance.allow('admin', '/api/vehicles/one', '*');
+        // yield aclInstance.allow('admin', '/api/users', '*');
+        yield aclInstance.allow('admin', '/api/dismantling-orders/one', '*');
+        yield aclInstance.allow('admin', '/api/dismantling-orders', '*');
+        yield aclInstance.allow('operationOperator', '/api/dismantling-orders/one', ['get', 'patch']);
+        yield aclInstance.allow('operationOperator', '/api/dismantling-orders', ['get']);
 ```
 
 
@@ -29,6 +36,9 @@ resources:
 
 /api/vehicles post get(with field projection)
 /api/vehicles/one patch get
+
+/api/dismantling-orders GET
+/api/dismantling-orders/one GET PATCH
 
 /api/products
 /api/products/one

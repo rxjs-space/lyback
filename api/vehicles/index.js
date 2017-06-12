@@ -24,8 +24,8 @@ router.post('/', (req, res) => {
     const patches = {patches: req.body.patches};
     newVehicle.createdAt = (new Date()).toISOString();
     newVehicle.createdBy = req.user._id;
-    patches.createdAt = (new Date()).toISOString();
-    patches.createdBy = req.user._id;
+    patches.createdAt = newVehicle.createdAt;
+    patches.createdBy = newVehicle.createdBy;
     patches.vin = newVehicle.vin;
     const patchResult = yield db.collection('vehiclePatches').insert(patches);
     const saveResult = yield db.collection('vehicles').insert(newVehicle);
@@ -40,9 +40,14 @@ router.post('/', (req, res) => {
 })
 
 router.get('/', (req, res) => {
+  const dbQuery = {};
+  // turn req.query into dbQuery
+  for (let k of Object.keys(req.query)) {
+    dbQuery[k] = req.query[k]
+  }
   co(function*() {
     const db = yield dbX.dbPromise;
-    const docs = yield db.collection('vehicles').find({}, {
+    const docs = yield db.collection('vehicles').find(dbQuery, {
       'id': 1,
       'vin': 1,
       'entranceDate': 1,
@@ -51,7 +56,7 @@ router.get('/', (req, res) => {
     })
     .sort([['_id', -1]])
     .toArray();
-    res.send(docs);
+    res.json(docs);
   }).catch((err) => {
     return res.status(500).json(err.stack);
   })
@@ -86,8 +91,8 @@ router.get('/one', (req, res) => {
         _id: vehicle._id
       }); 
     } else {
-      const userC = yield db.collection('users').find({_id: vehicle.createdBy}).toArray();
-      const userM = yield db.collection('users').find({_id: vehicle.modifiedBy}).toArray();
+      const userC = yield db.collection('users').find({_id: vehicle.createdBy}, {password: 0}).toArray();
+      const userM = yield db.collection('users').find({_id: vehicle.modifiedBy}, {password: 0}).toArray();
       vehicle.createdBy = userC[0];
       vehicle.modifiedBy = userM[0];
       return res.send(vehicle);
