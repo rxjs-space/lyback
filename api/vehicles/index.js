@@ -40,11 +40,22 @@ router.post('/', (req, res) => {
 })
 
 router.get('/', (req, res) => {
+  const searchQuery = req.query;
+  const keys = Object.keys(searchQuery);
+  // turn string 'true' into boolean true
+  if (keys.length) {
+    for (const k of keys) {
+      if (searchQuery[k] === 'true') {searchQuery[k] = true; }
+      if (searchQuery[k] === 'false') {searchQuery[k] = false; }
+    }
+  }
   const dbQuery = {};
   // turn req.query into dbQuery
-  for (let k of Object.keys(req.query)) {
-    dbQuery[k] = req.query[k]
+  for (let k of Object.keys(searchQuery)) {
+    dbQuery[k] = searchQuery[k]
   }
+  console.log(searchQuery);
+  console.log(dbQuery);
   co(function*() {
     const db = yield dbX.dbPromise;
     const docs = yield db.collection('vehicles').find(dbQuery, {
@@ -103,6 +114,7 @@ router.get('/one', (req, res) => {
     return res.status(500).json(err.stack);
   })
 });
+
 
 router.patch('/one', (req, res) => {
   const vin = req.query.vin;
