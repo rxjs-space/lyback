@@ -54,8 +54,8 @@ router.get('/', (req, res) => {
   for (let k of Object.keys(searchQuery)) {
     dbQuery[k] = searchQuery[k]
   }
-  console.log(searchQuery);
-  console.log(dbQuery);
+  // console.log(searchQuery);
+  // console.log(dbQuery);
   co(function*() {
     const db = yield dbX.dbPromise;
     const docs = yield db.collection('vehicles').find(dbQuery, {
@@ -64,6 +64,7 @@ router.get('/', (req, res) => {
       'entranceDate': 1,
       'status': 1,
       'vehicle.plateNo': 1,
+      'vehicle.vehicleType': 1,
       'dismantling': 1
     })
     .sort([['_id', -1]])
@@ -141,8 +142,8 @@ router.patch('/one', (req, res) => {
     patches.createdBy = req.user._id;
     patches.vin = vin;
     const patchesToApply = toMongodb(req.body.patches);
-    console.log(req.body.patches);
-    console.log(patchesToApply);
+    // console.log(req.body.patches);
+    // console.log(patchesToApply);
     const patchResult = yield db.collection('vehiclePatches').insert(patches);
     const updateResult = yield db.collection('vehicles').updateOne(
       {vin},
