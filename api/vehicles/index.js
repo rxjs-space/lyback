@@ -96,7 +96,7 @@ router.get('/one', (req, res) => {
       'modifiedBy': 0
     }*/).toArray();
     if (!docs.length) {return res.status(400).json({
-      message: `no doc whose id is ${req.query.vin}`
+      message: `no vehicle whose vin is ${req.query.vin}`
     })}
     const vehicle = docs[0];
     if (req.query.returnIDOnly && JSON.parse(req.query.returnIDOnly)) {
@@ -133,12 +133,13 @@ router.patch('/one', (req, res) => {
 
   co(function*() {
     const db = yield dbX.dbPromise;
+    const patchedAt = (new Date()).toISOString()
     req.body.patches.push(
-      {op: 'replace', path: '/modifiedAt', value: (new Date()).toISOString()},
+      {op: 'replace', path: '/modifiedAt', value: patchedAt},
       {op: 'replace', path: '/modifiedBy', value: req.user._id}
     )
     const patches = {patches: req.body.patches};
-    patches.createdAt = (new Date()).toISOString();
+    patches.createdAt = patchedAt;
     patches.createdBy = req.user._id;
     patches.vin = vin;
     const patchesToApply = toMongodb(req.body.patches);

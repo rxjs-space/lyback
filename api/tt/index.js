@@ -29,7 +29,7 @@ router.get('/one', (req, res) => {
     const db = yield dbX.dbPromise;
     const docs = yield db.collection('tt').find({name: req.query.name}).toArray();
     if (!docs.length) {return res.status(400).json({
-      message: `no doc whose name is ${req.query.name}`
+      message: `no tt whose name is ${req.query.name}`
     })}
     res.send(docs[0]);
   }).catch((err) => {
