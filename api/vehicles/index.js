@@ -3,6 +3,23 @@ const co = require('co');
 const toMongodb = require('jsonpatch-to-mongodb');
 
 const dbX = require('../../db');
+const getLastSundays = require('../../utils/lastSundays');
+
+const basedOnEntranceWeek = {
+  'thisWeek': (dbQuery, lastSundays) => {
+    dbQuery['entranceDate'] = {$gt: lastSundays['1']}
+    return dbQuery;
+  },
+  'lastWeek': (dbQuery, lastSundays) => {
+    dbQuery['entranceDate'] = {$gt: lastSundays['2'], $lte: lastSundays['1']}
+    return dbQuery;
+  },
+  'evenEarlier': (dbQuery, lastSundays) => {
+    dbQuery['entranceDate'] = {$lte: lastSundays['2']}
+    return dbQuery;
+  },
+  'total': (dbQuery, lastSundays) => {return dbQuery; },
+}
 
 router.post('/', (req, res) => {
   if (!req.body) {
@@ -49,10 +66,14 @@ router.get('/', (req, res) => {
       if (searchQuery[k] === 'false') {searchQuery[k] = false; }
     }
   }
-  const dbQuery = {};
+  let dbQuery = {};
   // turn req.query into dbQuery
   for (let k of Object.keys(searchQuery)) {
-    dbQuery[k] = searchQuery[k]
+    if (k === 'entranceWeek') {
+      dbQuery = basedOnEntranceWeek[searchQuery[k]](dbQuery, getLastSundays());
+    } else {
+      dbQuery[k] = searchQuery[k];
+    }
   }
   // console.log(searchQuery);
   // console.log(dbQuery);
