@@ -11,7 +11,7 @@ const myAcl = require('../my-acl');
 const myPassport = require('../my-passport')();
 
 router.use(myPassport.authenticate());
-router.use(myAcl.middlleware);
+router.use(myAcl.middlleware());
 
 
 router.use('/vehicles', vehicles);

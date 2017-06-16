@@ -75,6 +75,11 @@ router.get('/', (req, res) => {
       dbQuery[k] = searchQuery[k];
     }
   }
+
+  // deal with vehicleType === 'z', that is not '2' (i.e, not motorbike)
+  if (dbQuery['vehicle.vehicleType'] === 'z') {
+    dbQuery['vehicle.vehicleType'] = {$ne: '2'}
+  }
   // console.log(searchQuery);
   // console.log(dbQuery);
   co(function*() {
@@ -86,6 +91,7 @@ router.get('/', (req, res) => {
       'status': 1,
       'vehicle.plateNo': 1,
       'vehicle.vehicleType': 1,
+      'vehicle.brand': 1,
       'dismantling': 1
     })
     .sort([['_id', -1]])

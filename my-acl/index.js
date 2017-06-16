@@ -19,7 +19,7 @@ module.exports = {
       })
     }
   },
-  get middlleware() {
+  middlleware() {
     const self = this;
     return (req, res, next) => {
       co(function*() {
