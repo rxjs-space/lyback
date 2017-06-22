@@ -4,20 +4,31 @@ const co = require('co');
 let aclInstance;
 
 module.exports = {
+  // get aclInstancePromise() {
+  //   if (aclInstance) {
+  //     return Promise.resolve(aclInstance);
+  //   } else {
+  //     return co(function*() {
+  //       const db = yield dbX.dbPromise;
+  //       // const db = dbX.db;
+  //       aclInstance = new acl(new acl.mongodbBackend(db, 'acl_'));
+  //       return aclInstance;
+  //     }).catch(err => {
+  //       console.log('err at aclInstancePromise', err);
+  //       return res.status(500).json(err.stack);
+  //     })
+  //   }
+  // },
   get aclInstancePromise() {
-    if (aclInstance) {
-      return Promise.resolve(aclInstance);
-    } else {
-      return co(function*() {
-        const db = yield dbX.dbPromise;
-        // const db = dbX.db;
-        aclInstance = new acl(new acl.mongodbBackend(db, 'acl_'));
-        return aclInstance;
-      }).catch(err => {
-        console.log('err at aclInstancePromise', err);
-        return res.status(500).json(err.stack);
-      })
-    }
+    return co(function*() {
+      const db = yield dbX.dbPromise;
+      // const db = dbX.db;
+      aclInstance = new acl(new acl.mongodbBackend(db, 'acl_'));
+      return aclInstance;
+    }).catch(err => {
+      console.log('err at aclInstancePromise', err);
+      return res.status(500).json(err.stack);
+    })
   },
   middlleware() {
     const self = this;

@@ -3,14 +3,62 @@ const co = require('co');
 const toMongodb = require('jsonpatch-to-mongodb');
 const ObjectID = require('mongodb').ObjectID;
 
+const getLastSundays = require('../../utils/lastSundays');
 const dbX = require('../../db');
+
+const basedOnDismantlingOrderWeek = {
+  'thisWeek': (dbQuery, lastSundays) => {
+    dbQuery['orderDate'] = {$gt: lastSundays['1']}
+    return dbQuery;
+  },
+  'lastWeek': (dbQuery, lastSundays) => {
+    dbQuery['orderDate'] = {$gt: lastSundays['2'], $lte: lastSundays['1']}
+    return dbQuery;
+  },
+  'evenEarlier': (dbQuery, lastSundays) => {
+    dbQuery['orderDate'] = {$lte: lastSundays['2']}
+    return dbQuery;
+  },
+  'total': (dbQuery, lastSundays) => {return dbQuery; },
+}
 
 router.get('/reports', require('./reports'));
 router.get('/', (req, res) => {
-  const dbQuery = {};
-  for (let k of Object.keys(req.query)) {
-    dbQuery[k] = req.query[k]
+  const searchQuery = req.query;
+  const keys = Object.keys(searchQuery);
+  // turn string 'true' into boolean true
+  if (keys.length) {
+    for (const k of keys) {
+      if (searchQuery[k] === 'true') {searchQuery[k] = true; }
+      if (searchQuery[k] === 'false') {searchQuery[k] = false; }
+    }
   }
+
+  let dbQuery = {};
+  for (let k of keys) {
+    switch (true) {
+      case k === 'dismantlingStarted':
+        if (searchQuery['dismantlingStarted']) {
+          dbQuery['startedAt'] = {'$gt': ''};
+        } else {
+          dbQuery['startedAt'] = '';
+        }
+        break;
+      case k === 'dismantlingOrderWeek':
+        dbQuery = basedOnDismantlingOrderWeek[searchQuery[k]](dbQuery, getLastSundays());
+        break;
+      case k === 'completed':
+        dbQuery['completedAt'] = searchQuery[k] ? {'$gt': ''} : '';
+        break;
+      default:
+      dbQuery[k] = searchQuery[k];
+    }
+  }
+
+  if (dbQuery['vehicleType'] === 'z') {
+    dbQuery['vehicleType'] = {$ne: '2'}
+  }  
+
   console.log(dbQuery);
   co(function*() {
     const db = yield dbX.dbPromise;
@@ -177,7 +225,64 @@ router.get('/one', (req, res) => {
 })
 
 router.patch('/one', (req, res) => {
-  // todo: when the dismantlingOrder if completed, mark the vehicle as dismantling = '0'
+  if (!req.body || !req.body.dismantlingOrderId || !req.body.patches || !req.body.vin) {
+    return res.status(400).json({
+      message: 'Insufficient data provided.'
+    })
+  }
+
+  const dismantlingOrderId = new ObjectID(req.body.dismantlingOrderId);
+  const patchesToInsert = {patches: req.body.patches};
+  patchesToInsert.createdAt = (new Date()).toISOString();
+  patchesToInsert.createdBy = req.user._id;
+  const patchesToApply = toMongodb(req.body.patches);
+  let isCompleted, completedAt, patchesToInsertForVehicle, patchesToApplyForVehicle;
+  console.log('patchForCompletedAt', JSON.stringify(patchesToInsert));
+  const patchForCompletedAt = patchesToInsert.patches.filter(p => p.path === '/completedAt')[0];
+  if (patchForCompletedAt) {
+    isCompleted = true;
+    completedAt = patchForCompletedAt.value;
+  }
+  // const isCompleted = JSON.stringify(patchesToInsert.patches).indexOf('completedAt');
+  if (isCompleted) { // if the dismantlingOrder is completed, mark the corresponding vehicle
+    patchesToInsertForVehicle = {
+      createdAt: patchesToInsert.createdAt,
+      createdBy: patchesToInsert.createdBy,
+      patches: [
+        {op: 'replace', path: '/status/dismantled/done', value: true},
+        {op: 'replace', path: '/status/dismantled/date', value: completedAt.slice(0, 10)},
+        {op: 'replace', path: '/dismantling', value: false}
+      ]
+    };
+    patchesToApplyForVehicle = toMongodb(patchesToInsertForVehicle.patches);
+  }
+
+
+  co(function*() {
+    const db = yield dbX.dbPromise;
+    // insert patches for dismantling order
+    const insertPatchesToDismantlingOrderPatchesResult = 
+      yield db.collection('dismantlingOrderPatches').insert(patchesToInsert);
+    // update dismantling order
+    const updateResult = yield db.collection('dismantlingOrders').updateOne(
+      {_id: dismantlingOrderId},
+      patchesToApply
+    );
+    if (isCompleted) {
+      // insert patches for vehicle
+      const insertPatchesToVehiclePatchesResult = 
+        yield db.collection('vehiclePatches').insert(patchesToInsertForVehicle);
+      // update vehicle
+      const updateVehicleResult = yield db.collection('vehicles').update(
+        {vin: req.body.vin},
+        patchesToApplyForVehicle
+      )
+    }
+    res.json(updateResult);
+  })
+
+
+  // todo: when the dismantlingOrder if completed, mark the vehicle as dismantling = false and dismantled.done as true with date
   // todo: and then makr the dismantling with markedAt
   res.json({ok: true})
 })

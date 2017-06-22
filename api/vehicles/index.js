@@ -68,7 +68,7 @@ router.get('/', (req, res) => {
   }
   let dbQuery = {};
   // turn req.query into dbQuery
-  for (let k of Object.keys(searchQuery)) {
+  for (let k of keys) {
     if (k === 'entranceWeek') {
       dbQuery = basedOnEntranceWeek[searchQuery[k]](dbQuery, getLastSundays());
     } else {

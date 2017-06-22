@@ -14,27 +14,13 @@ module.exports = (req, res) => {
   // };
   // lastSundays['2'] = (new Date(Date.parse(lastSundays['1']) - onedayMS * 7)).toISOString().slice(0, 10);
   const lastSundays = getLastSundays();
-  const reduceFunctionWaiting =
-  `
-    function(curr, result) {
-      if (curr.entranceDate > '${lastSundays['1']}') {result.thisWeek++; }
-      if (curr.entranceDate <= '${lastSundays['1']}' && curr.entranceDate > '${lastSundays['2']}') {result.lastWeek++; }
-      if (curr.entranceDate <= '${lastSundays['2']}') {result.evenEarlier++; }
-      result.total++;
-    }
-  `;
 
 
   co(function*() {
     const db = yield dbX.dbPromise;
-    // const resultWaiting = yield db.collection('vehicles').group(
-    //   ['vehicle.vehicleType', 'status.firstSurvey.done', 'status.secondSurvey.done'], 
-    //   {'dismantling': false, 'status.dismantled.done': false, 'auctioning': false, 'status.sold.done': false}, 
-    //   {'thisWeek': 0, 'lastWeek': 0, 'evenEarlier': 0, 'total': 0},
-    //   reduceFunctionWaiting
-    // )
 
-    let resultWaiting = yield db.collection('vehicles').aggregate([
+
+    let resultIdle = yield db.collection('vehicles').aggregate([
       {'$match': {'dismantling': false, 'status.dismantled.done': false, 'auctioning': false, 'status.sold.done': false}},
       {'$group': {
         '_id': {
@@ -57,8 +43,8 @@ module.exports = (req, res) => {
       }}
     ]).toArray();
 
-    // console.log(resultWaiting);
-    resultWaiting = resultWaiting.map(r => {
+    // console.log(resultIdle);
+    resultIdle = resultIdle.map(r => {
       return {
         'vehicle.vehicleType': r._id['vehicle.vehicleType'],
         'status.firstSurvey.done': r._id['status.firstSurvey.done'],
@@ -70,7 +56,7 @@ module.exports = (req, res) => {
       }
     })
 
-    let resultDismantling = yield db.collection('dismantlingOrders').aggregate([
+    let resultProgressing = yield db.collection('dismantlingOrders').aggregate([
       {'$match': { 'completedAt': '' }},
       {'$group': 
         {
@@ -96,7 +82,7 @@ module.exports = (req, res) => {
       }
     ]).toArray();
 
-    resultDismantling = resultDismantling.map(r => {
+    resultProgressing = resultProgressing.map(r => {
       return {
         vehicleType: r._id.vehicleType,
         started: r._id.started,
@@ -108,8 +94,8 @@ module.exports = (req, res) => {
     })
 
     res.json({
-      waiting: resultWaiting,
-      dismantling: resultDismantling
+      idle: resultIdle,
+      progressing: resultProgressing
     });
   }).catch((error) => {
     return res.status(500).json(error.stack);
