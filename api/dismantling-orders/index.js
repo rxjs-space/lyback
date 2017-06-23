@@ -56,7 +56,7 @@ router.get('/', (req, res) => {
   }
 
   if (dbQuery['vehicleType'] === 'z') {
-    dbQuery['vehicleType'] = {$ne: '2'}
+    dbQuery['vehicleType'] = {$ne: '3'}
   }  
 
   console.log(dbQuery);

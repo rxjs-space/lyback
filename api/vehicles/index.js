@@ -21,6 +21,7 @@ const basedOnEntranceWeek = {
   'total': (dbQuery, lastSundays) => {return dbQuery; },
 }
 
+
 router.post('/', (req, res) => {
   if (!req.body) {
     return res.status(400).json({
@@ -44,13 +45,28 @@ router.post('/', (req, res) => {
     patches.createdAt = newVehicle.createdAt;
     patches.createdBy = newVehicle.createdBy;
     patches.vin = newVehicle.vin;
+    console.log('inserting patches');
     const patchResult = yield db.collection('vehiclePatches').insert(patches);
+    console.log('inserting vehicle');
     const saveResult = yield db.collection('vehicles').insert(newVehicle);
+    console.log('vehicle inserted');
     res.json(saveResult);
   }).catch(err => {
     if (err.stack && err.stack.indexOf('E11000') > -1) {
       return res.status(400).json(err.stack)
     }
+    console.log(err.stack
+    /*
+    { Error: read ECONNRESET
+    at exports._errnoException (util.js:1022:11)
+    at TCP.onread (net.js:569:26) name: 'MongoError', message: 'read ECONNRESET' }
+Error: read ECONNRESET
+    at exports._errnoException (util.js:1022:11)
+    at TCP.onread (net.js:569:26)
+    
+    */
+    
+    );
     return res.status(500).json(err.stack);
   })
 
@@ -76,9 +92,9 @@ router.get('/', (req, res) => {
     }
   }
 
-  // deal with vehicleType === 'z', that is not '2' (i.e, not motorbike)
+  // deal with vehicleType === 'z', that is not '3' (i.e, not motorbike)
   if (dbQuery['vehicle.vehicleType'] === 'z') {
-    dbQuery['vehicle.vehicleType'] = {$ne: '2'}
+    dbQuery['vehicle.vehicleType'] = {$ne: '3'}
   }
   // console.log(searchQuery);
   // console.log(dbQuery);
@@ -210,4 +226,7 @@ router.patch('/one', (req, res) => {
   //   return res.status(500).json(err.stack);
   // })
 });
+
+router.get('/reports', require('./reports'));
+
 module.exports = router;

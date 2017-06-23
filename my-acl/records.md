@@ -15,7 +15,8 @@
         yield aclInstance.allow('operationOperator', '/api/dismantling-orders', ['get']);
         yield aclInstance.allow('admin', '/api/dismantling-orders/reports', '*');
         yield aclInstance.allow('operationOperator', '/api/dismantling-orders/reports', ['get']);
-
+        yield aclInstance.allow('admin', '/api/vehicles/reports', '*');
+        yield aclInstance.allow('operationOperator', '/api/vehicles/reports', ['get']);
 ```
 
 
@@ -39,6 +40,7 @@ resources:
 
 /api/vehicles post get(with field projection)
 /api/vehicles/one patch get
+/api/vehicles/reports get
 
 /api/dismantling-orders GET
 /api/dismantling-orders/one GET PATCH
