@@ -8,7 +8,7 @@ const dbX = require('../../db');
 
 router.post('/', function(req, res) {
   if (!req.body) {return res.status(500).json({
-    message: 'No brand etails provided.'
+    message: 'No brand details provided.'
   })}
   let newBrands;
   if (req.body instanceof Array) {
@@ -18,8 +18,9 @@ router.post('/', function(req, res) {
   }
   newBrands.forEach(b => {
     if (!b.name) {
+      const bStr = JSON.stringify(b);
       return res.status(500).json({
-        message: 'Some brand has no specified.'
+        message: `${bStr} has no valid name property.`
       })
     }
   })
@@ -28,8 +29,13 @@ router.post('/', function(req, res) {
     const db = yield dbX.dbPromise;
     const insertResult = yield db.collection('brands').insertMany(newBrands);
     res.json(insertResult);
-  }).catch(err => {
-    return res.status(500).json(err.stack);
+  }).catch(error => {
+    const errStr = JSON.stringify(error.stack);
+    // if duplicate brand ...
+    if (errStr.indexOf('E11000')) return res.status(400).json({
+      message: `Duplicate brand. ${errStr}`
+    });
+    return res.status(500).json(error.stack);
   })
 });
 

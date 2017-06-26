@@ -3,7 +3,7 @@ const co = require('co');
 const toMongodb = require('jsonpatch-to-mongodb');
 
 const dbX = require('../../db');
-const getLastSundays = require('../../utils/lastSundays');
+const getLastSundays = require('../../utils/last-sundays');
 
 const basedOnEntranceWeek = {
   'thisWeek': (dbQuery, lastSundays) => {

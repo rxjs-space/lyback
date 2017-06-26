@@ -1,6 +1,12 @@
 const co = require('co');
 const dbX = require('../../db');
-const getLastSundays = require('../../utils/lastSundays');
+const getLastSundays = require('../../utils/last-sundays');
+const getTenDaysAgo = require('../../utils/ten-days-ago');
+
+const startDay = (new Date());
+const onedayMS = 1000 * 60 * 60 * 24;
+const nineDaysAgo = (new Date(Date.parse(startDay) - onedayMS * 9));
+const nineDaysAgoDate = nineDaysAgo.toISOString().slice(0, 10);
 
 module.exports = (req, res) => {
   // const today = (new Date());
@@ -93,9 +99,34 @@ module.exports = (req, res) => {
       }
     })
 
+    let resultCompletedLastTenDays = yield db.collection('dismantlingOrders').aggregate([
+      {'$match': {
+        'completedAt': {'$gt': nineDaysAgoDate}
+      }},
+      {'$group': {
+        '_id': {
+          'vehicleType': '$vehicleType',
+          'isAdHoc': '$isAdHoc',
+          'completedDate': {
+            '$substr': ['$completedAt', 0, 10]
+          }
+        },
+        'total': {'$sum': 1}
+      }}
+    ]).toArray();
+
+    resultCompletedLastTenDays = resultCompletedLastTenDays.map(r => ({
+      vehicleType: r._id.vehicleType,
+      isAdHoc: r._id.isAdHoc,
+      completedDate: r._id.completedDate,
+      total: r.total
+    }));
+    // console.log(resultCompletedLastTenDays);
+
     res.json({
       idle: resultIdle,
-      progressing: resultProgressing
+      progressing: resultProgressing,
+      completed: resultCompletedLastTenDays
     });
   }).catch((error) => {
     return res.status(500).json(error.stack);

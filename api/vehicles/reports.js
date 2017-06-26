@@ -1,11 +1,12 @@
 const co = require('co');
 const dbX = require('../../db');
-const getLastSundays = require('../../utils/lastSundays');
+const getLastSundays = require('../../utils/last-sundays');
+const getTenDaysAgo = require('../../utils/ten-days-ago');
 
-const today = (new Date());
-const onedayMS = 1000 * 60 * 60 * 24;
-const tenDaysAgo = (new Date(Date.parse(today) - onedayMS * 10));
-const tenDaysAgoDate = tenDaysAgo.toISOString().slice(0, 10);
+// const today = (new Date());
+// const onedayMS = 1000 * 60 * 60 * 24;
+// const tenDaysAgo = (new Date(Date.parse(today) - onedayMS * 10));
+// const tenDaysAgoDate = tenDaysAgo.toISOString().slice(0, 10);
 
 
 module.exports = (req, res) => {
@@ -16,7 +17,7 @@ module.exports = (req, res) => {
 
     let resultLatest10Days = yield db.collection('vehicles').aggregate([
       {'$match': {
-        'entranceDate': {'$gt': tenDaysAgoDate}
+        'entranceDate': {'$gt': getTenDaysAgo()}
       }},
       {'$group': {
         '_id': {
