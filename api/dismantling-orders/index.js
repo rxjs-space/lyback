@@ -50,6 +50,9 @@ router.get('/', (req, res) => {
       case k === 'completed':
         dbQuery['completedAt'] = searchQuery[k] ? {'$gt': ''} : '';
         break;
+      case k === 'completedDate':
+        dbQuery['completedAt'] = {'$regex': `${searchQuery[k]}.*`}
+        break;
       default:
       dbQuery[k] = searchQuery[k];
     }
