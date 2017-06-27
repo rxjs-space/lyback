@@ -4,6 +4,7 @@ const toMongodb = require('jsonpatch-to-mongodb');
 
 const dbX = require('../../db');
 const getLastSundays = require('../../utils/last-sundays');
+const getLastMondays = require('../../utils/last-mondays');
 
 const basedOnEntranceWeek = {
   'thisWeek': (dbQuery, lastSundays) => {
@@ -19,6 +20,18 @@ const basedOnEntranceWeek = {
     return dbQuery;
   },
   'total': (dbQuery, lastSundays) => {return dbQuery; },
+}
+
+const basedOnEntranceMonday = (entranceMonday, dbQuery, lastMondays) => {
+  switch (true) {
+    case entranceMonday === lastMondays['1']:
+      dbQuery['entranceDate'] = {$gt: lastMondays['1']}
+      break;
+    default:
+      const nextMonday = new Date(Date.parse(new Date(entranceMonday)) + 1000 * 60 * 60 * 24 * 7).toISOString().slice(0, 10);
+      dbQuery['entranceDate'] = {$gt: entranceMonday, $lt: nextMonday};
+  }
+  return dbQuery;
 }
 
 
@@ -85,11 +98,17 @@ router.get('/', (req, res) => {
   let dbQuery = {};
   // turn req.query into dbQuery
   for (let k of keys) {
-    if (k === 'entranceWeek') {
-      dbQuery = basedOnEntranceWeek[searchQuery[k]](dbQuery, getLastSundays());
-    } else {
-      dbQuery[k] = searchQuery[k];
+    switch (k) {
+      case 'entranceWeek':
+        dbQuery = basedOnEntranceWeek[searchQuery[k]](dbQuery, getLastSundays());
+        break;
+      case 'entranceMonday':
+        dbQuery = basedOnEntranceMonday(searchQuery[k], dbQuery, getLastMondays());
+        break;
+      default:
+        dbQuery[k] = searchQuery[k];
     }
+
   }
 
   // deal with vehicleType === 'z', that is not '3' (i.e, not motorbike)
@@ -97,7 +116,7 @@ router.get('/', (req, res) => {
     dbQuery['vehicle.vehicleType'] = {$ne: '3'}
   }
   // console.log(searchQuery);
-  // console.log(dbQuery);
+  console.log(dbQuery);
   co(function*() {
     const db = yield dbX.dbPromise;
     const docs = yield db.collection('vehicles').find(dbQuery, {
