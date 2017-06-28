@@ -1,6 +1,6 @@
 const co = require('co');
 const dbX = require('../../db');
-const getLastSundays = require('../../utils/last-sundays');
+// const getLastSundays = require('../../utils/last-sundays');
 const getLastMondays = require('../../utils/last-mondays');
 const getTenDaysAgo = require('../../utils/ten-days-ago');
 
@@ -14,7 +14,7 @@ module.exports = (req, res) => {
 
   co(function*() {
     const db = yield dbX.dbPromise;
-    const lastSundays = getLastSundays();
+    // const lastSundays = getLastSundays();
     const lastMondays = getLastMondays();
     let result;
 
@@ -42,36 +42,35 @@ module.exports = (req, res) => {
         }))
         const resultLastFiveWeeks = yield db.collection('vehicles').aggregate([
           {'$match': {
-            'entranceDate': {'$gt': lastSundays[5]}
+            'entranceDate': {'$gte': lastMondays['5']}
           }},
           {'$group': {
             '_id': {
               'vehicle.vehicleType': '$vehicle.vehicleType',
             },
             [lastMondays['1']]: {'$sum': {'$cond': [
-              {'$gt': ['$entranceDate', lastSundays['1']]}, 1, 0
+              {'$gte': ['$entranceDate', lastMondays['1']]}, 1, 0
             ]}},
             [lastMondays['2']]: {'$sum': {'$cond': [
-              {'$lte': ['$entranceDate', lastSundays['1']]}, {'$cond': [
-                {'$gt': ['$entranceDate', lastSundays['2']]}, 1, 0
+              {'$lt': ['$entranceDate', lastMondays['1']]}, {'$cond': [
+                {'$gte': ['$entranceDate', lastMondays['2']]}, 1, 0
               ]}, 0
             ]}},
             [lastMondays['3']]: {'$sum': {'$cond': [
-              {'$lte': ['$entranceDate', lastSundays['2']]}, {'$cond': [
-                {'$gt': ['$entranceDate', lastSundays['3']]}, 1, 0
+              {'$lt': ['$entranceDate', lastMondays['2']]}, {'$cond': [
+                {'$gte': ['$entranceDate', lastMondays['3']]}, 1, 0
               ]}, 0
             ]}},
             [lastMondays['4']]: {'$sum': {'$cond': [
-              {'$lte': ['$entranceDate', lastSundays['3']]}, {'$cond': [
-                {'$gt': ['$entranceDate', lastSundays['4']]}, 1, 0
+              {'$lt': ['$entranceDate', lastMondays['3']]}, {'$cond': [
+                {'$gte': ['$entranceDate', lastMondays['4']]}, 1, 0
               ]}, 0
             ]}},
             [lastMondays['5']]: {'$sum': {'$cond': [
-              {'$lte': ['$entranceDate', lastSundays['4']]}, {'$cond': [
-                {'$gt': ['$entranceDate', lastSundays['5']]}, 1, 0
+              {'$lt': ['$entranceDate', lastMondays['4']]}, {'$cond': [
+                {'$gte': ['$entranceDate', lastMondays['5']]}, 1, 0
               ]}, 0
             ]}},
-            'total': { '$sum': 1 }
           }}
         ]).toArray();
 
@@ -97,15 +96,15 @@ module.exports = (req, res) => {
               'status.secondSurvey.done': '$status.secondSurvey.done'
             },
             'thisWeek': {'$sum': {'$cond': [
-              {'$gt': ['$entranceDate', lastSundays['1']]}, 1, 0
+              {'$gte': ['$entranceDate', lastMondays['1']]}, 1, 0
             ]}},
             'lastWeek': {'$sum': {'$cond': [
-              {'$lte': ['$entranceDate', lastSundays['1']]}, {'$cond': [
-                {'$gt': ['$entranceDate', lastSundays['2']]}, 1, 0
+              {'$lt': ['$entranceDate', lastMondays['1']]}, {'$cond': [
+                {'$gte': ['$entranceDate', lastMondays['2']]}, 1, 0
               ]}, 0
             ]}},
             'evenEarlier': {'$sum': {'$cond': [
-              {'$lte': ['$entranceDate', lastSundays['2']]}, 1, 0
+              {'$lt': ['$entranceDate', lastMondays['2']]}, 1, 0
             ]}},
             'total': {
               '$sum': 1
@@ -127,34 +126,33 @@ module.exports = (req, res) => {
           {'$match': {
             'vehicle.vehicleType': '3',
             'status.firstSurvey.done': true,
-            'status.firstSurvey.date': {'$gt': lastSundays['5']}
+            'status.firstSurvey.date': {'$gte': lastMondays['5']}
           }},
           {'$group': {
             '_id': null,
-            'week0': {'$sum': {'$cond': [
-              {'$gt': ['$status.firstSurvey.date', lastSundays['1']]}, 1, 0
+            [lastMondays['1']]: {'$sum': {'$cond': [
+              {'$gte': ['$status.firstSurvey.date', lastMondays['1']]}, 1, 0
             ]}},
-            'week-1': {'$sum': {'$cond': [
-              {'$lte': ['$status.firstSurvey.date', lastSundays['1']]}, {'$cond': [
-                {'$gt': ['$status.firstSurvey.date', lastSundays['2']]}, 1, 0
+            [lastMondays['2']]: {'$sum': {'$cond': [
+              {'$lt': ['$status.firstSurvey.date', lastMondays['1']]}, {'$cond': [
+                {'$gte': ['$status.firstSurvey.date', lastMondays['2']]}, 1, 0
               ]}, 0
             ]}},
-            'week-2': {'$sum': {'$cond': [
-              {'$lte': ['$status.firstSurvey.date', lastSundays['2']]}, {'$cond': [
-                {'$gt': ['$status.firstSurvey.date', lastSundays['3']]}, 1, 0
+            [lastMondays['3']]: {'$sum': {'$cond': [
+              {'$lt': ['$status.firstSurvey.date', lastMondays['2']]}, {'$cond': [
+                {'$gte': ['$status.firstSurvey.date', lastMondays['3']]}, 1, 0
               ]}, 0
             ]}},
-            'week-3': {'$sum': {'$cond': [
-              {'$lte': ['$status.firstSurvey.date', lastSundays['3']]}, {'$cond': [
-                {'$gt': ['$status.firstSurvey.date', lastSundays['4']]}, 1, 0
+            [lastMondays['4']]: {'$sum': {'$cond': [
+              {'$lt': ['$status.firstSurvey.date', lastMondays['3']]}, {'$cond': [
+                {'$gte': ['$status.firstSurvey.date', lastMondays['4']]}, 1, 0
               ]}, 0
             ]}},
-            'week-4': {'$sum': {'$cond': [
-              {'$lte': ['$status.firstSurvey.date', lastSundays['4']]}, {'$cond': [
-                {'$gt': ['$status.firstSurvey.date', lastSundays['5']]}, 1, 0
+            [lastMondays['5']]: {'$sum': {'$cond': [
+              {'$lt': ['$status.firstSurvey.date', lastMondays['4']]}, {'$cond': [
+                {'$gte': ['$status.firstSurvey.date', lastMondays['5']]}, 1, 0
               ]}, 0
             ]}},
-            'total': { '$sum': 1 }
           }}
         ]).toArray();
 
@@ -163,34 +161,33 @@ module.exports = (req, res) => {
             'vehicle.vehicleType': {'$ne': '3'},
             'status.firstSurvey.done': true,
             'status.secondSurvey.done': false,
-            'status.firstSurvey.date': {'$gt': lastSundays['5']}
+            'status.firstSurvey.date': {'$gte': lastMondays['5']}
           }},
           {'$group': {
             '_id': null,
-            'week0': {'$sum': {'$cond': [
-              {'$gt': ['$status.firstSurvey.date', lastSundays['1']]}, 1, 0
+            [lastMondays['1']]: {'$sum': {'$cond': [
+              {'$gte': ['$status.firstSurvey.date', lastMondays['1']]}, 1, 0
             ]}},
-            'week-1': {'$sum': {'$cond': [
-              {'$lte': ['$status.firstSurvey.date', lastSundays['1']]}, {'$cond': [
-                {'$gt': ['$status.firstSurvey.date', lastSundays['2']]}, 1, 0
+            [lastMondays['2']]: {'$sum': {'$cond': [
+              {'$lt': ['$status.firstSurvey.date', lastMondays['1']]}, {'$cond': [
+                {'$gte': ['$status.firstSurvey.date', lastMondays['2']]}, 1, 0
               ]}, 0
             ]}},
-            'week-2': {'$sum': {'$cond': [
-              {'$lte': ['$status.firstSurvey.date', lastSundays['2']]}, {'$cond': [
-                {'$gt': ['$status.firstSurvey.date', lastSundays['3']]}, 1, 0
+            [lastMondays['3']]: {'$sum': {'$cond': [
+              {'$lt': ['$status.firstSurvey.date', lastMondays['2']]}, {'$cond': [
+                {'$gte': ['$status.firstSurvey.date', lastMondays['3']]}, 1, 0
               ]}, 0
             ]}},
-            'week-3': {'$sum': {'$cond': [
-              {'$lte': ['$status.firstSurvey.date', lastSundays['3']]}, {'$cond': [
-                {'$gt': ['$status.firstSurvey.date', lastSundays['4']]}, 1, 0
+            [lastMondays['4']]: {'$sum': {'$cond': [
+              {'$lt': ['$status.firstSurvey.date', lastMondays['3']]}, {'$cond': [
+                {'$gte': ['$status.firstSurvey.date', lastMondays['4']]}, 1, 0
               ]}, 0
             ]}},
-            'week-4': {'$sum': {'$cond': [
-              {'$lte': ['$status.firstSurvey.date', lastSundays['4']]}, {'$cond': [
-                {'$gt': ['$status.firstSurvey.date', lastSundays['5']]}, 1, 0
+            [lastMondays['5']]: {'$sum': {'$cond': [
+              {'$lt': ['$status.firstSurvey.date', lastMondays['4']]}, {'$cond': [
+                {'$gte': ['$status.firstSurvey.date', lastMondays['5']]}, 1, 0
               ]}, 0
             ]}},
-            'total': { '$sum': 1 }      
           }}
 
         ]).toArray();
@@ -199,46 +196,44 @@ module.exports = (req, res) => {
           {'$match': {
             'vehicle.vehicleType': {'$ne': '3'},
             'status.secondSurvey.done': true,
-            'status.secondSurvey.date': {'$gt': lastSundays['5']}
+            'status.secondSurvey.date': {'$gte': lastMondays['5']}
           }},
           {'$group': {
             '_id': null,
-            'week0': {'$sum': {'$cond': [
-              {'$gt': ['$status.secondSurvey.date', lastSundays['1']]}, 1, 0
+            [lastMondays['1']]: {'$sum': {'$cond': [
+              {'$gte': ['$status.secondSurvey.date', lastMondays['1']]}, 1, 0
             ]}},
-            'week-1': {'$sum': {'$cond': [
-              {'$lte': ['$status.secondSurvey.date', lastSundays['1']]}, {'$cond': [
-                {'$gt': ['$status.secondSurvey.date', lastSundays['2']]}, 1, 0
+            [lastMondays['2']]: {'$sum': {'$cond': [
+              {'$lt': ['$status.secondSurvey.date', lastMondays['1']]}, {'$cond': [
+                {'$gte': ['$status.secondSurvey.date', lastMondays['2']]}, 1, 0
               ]}, 0
             ]}},
-            'week-2': {'$sum': {'$cond': [
-              {'$lte': ['$status.secondSurvey.date', lastSundays['2']]}, {'$cond': [
-                {'$gt': ['$status.secondSurvey.date', lastSundays['3']]}, 1, 0
+            [lastMondays['3']]: {'$sum': {'$cond': [
+              {'$lt': ['$status.secondSurvey.date', lastMondays['2']]}, {'$cond': [
+                {'$gte': ['$status.secondSurvey.date', lastMondays['3']]}, 1, 0
               ]}, 0
             ]}},
-            'week-3': {'$sum': {'$cond': [
-              {'$lte': ['$status.secondSurvey.date', lastSundays['3']]}, {'$cond': [
-                {'$gt': ['$status.secondSurvey.date', lastSundays['4']]}, 1, 0
+            [lastMondays['4']]: {'$sum': {'$cond': [
+              {'$lt': ['$status.secondSurvey.date', lastMondays['3']]}, {'$cond': [
+                {'$gte': ['$status.secondSurvey.date', lastMondays['4']]}, 1, 0
               ]}, 0
             ]}},
-            'week-4': {'$sum': {'$cond': [
-              {'$lte': ['$status.secondSurvey.date', lastSundays['4']]}, {'$cond': [
-                {'$gt': ['$status.secondSurvey.date', lastSundays['5']]}, 1, 0
+            [lastMondays['5']]: {'$sum': {'$cond': [
+              {'$lt': ['$status.secondSurvey.date', lastMondays['4']]}, {'$cond': [
+                {'$gte': ['$status.secondSurvey.date', lastMondays['5']]}, 1, 0
               ]}, 0
             ]}},
-            'total': { '$sum': 1 }      
           }}
         ]).toArray();
 
         const mapper = (result) => {
-          return {
-            'week0': result['week0'],
-            'week-1': result['week-1'],
-            'week-2': result['week-2'],
-            'week-3': result['week-3'],
-            'week-4': result['week-4'],
-            'total': result['total'],
-          }
+          return [
+            {date: lastMondays['1'], total: result[lastMondays['1']]},
+            {date: lastMondays['2'], total: result[lastMondays['2']]},
+            {date: lastMondays['3'], total: result[lastMondays['3']]},
+            {date: lastMondays['4'], total: result[lastMondays['4']]},
+            {date: lastMondays['5'], total: result[lastMondays['5']]},
+          ]
         }
 
         result = {
@@ -253,37 +248,9 @@ module.exports = (req, res) => {
 
     res.json(result);
 
+  }).catch(err => {
+    return res.status(500).json(err.stack);
   })
 
 
 }
-
-
-    
-  //   let resultIdle = yield db.collection('vehicles').aggregate([
-  //     {'$match': {'dismantling': false, 'status.dismantled.done': false, 'auctioning': false, 'status.sold.done': false}},
-  //     {'$group': {
-  //       '_id': {
-  //         'vehicle.vehicleType': '$vehicle.vehicleType',
-  //         'status.firstSurvey.done': '$status.firstSurvey.done',
-  //         'status.secondSurvey.done': '$status.secondSurvey.done'
-  //       },
-  //       'thisWeek': {'$sum': {'$cond': [
-  //         {'$gt': ['$entranceDate', lastSundays['1']]}, 1, 0
-  //       ]}},
-  //       'lastWeek': {'$sum': {'$cond': [
-  //         {'$lte': ['$entranceDate', lastSundays['1']]}, {'$cond': [
-  //           {'$gt': ['$entranceDate', lastSundays['2']]}, 1, 0
-  //         ]}, 0
-  //       ]}},
-  //       'evenEarlier': {'$sum': {'$cond': [
-  //         {'$lte': ['$entranceDate', lastSundays['2']]}, 1, 0
-  //       ]}},
-  //       'total': { '$sum': 1 }
-  //     }}
-  //   ]).toArray();
-  // })
-
-
-  // res.send('ok');
-

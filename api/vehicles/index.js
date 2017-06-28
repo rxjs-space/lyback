@@ -178,6 +178,51 @@ router.get('/one', (req, res) => {
   })
 });
 
+router.patch('/survey', (req, res) => {
+  // vehicleList: {vin, vehicleType}[]
+  // surveyType can be either 'firstSurvey' or 'secondSurvey'
+  // if surveyType is firstSurvey, and vehicleType is 3, mark both firstSurvey and secondSurvey as done
+  if (!req.body['vehicleList'] || !req.body['surveyType']) {
+    return res.status(400).json({
+      message: 'insufficient parameters.'
+    })
+  }
+
+  const vehicleList = req.body['vehicleList'];
+  const surveyType = req.body['surveyType'];
+
+  const userId = req.user._id;
+  const patchedAt = (new Date()).toISOString();
+  // patch status.firstSurvey.done, status.firstSurvey.date and modifiedAt, modifiedBy
+  const patchesForOneVehicle = {
+    vin: '',
+    patches: [
+      {op: 'replace', path: '/modifiedAt', value: patchedAt},
+      {op: 'replace', path: '/modifiedBy', value: userId},
+      {op: 'replace', path: `/status/${surveyType}/done`, value: true},
+      {op: 'replace', path: `/status/${surveyType}/date`, value: patchedAt.slice(0, 10)},
+    ],
+    patchedAt,
+    patchedBy: userId
+  };
+
+  const patchesForAllVehicles = vehicleList.map(vehicle => {
+    return Object.assign({}, patchesForOneVehicle, {vin: vehicle.vin})
+  });
+
+  const patchesToApply = toMongodb(patchesForOneVehicle.patches);
+  // res.json(patchesToApply);
+  co(function*() {
+    const db = yield dbX.dbPromise;
+    const patchResult = yield db.collection('vehiclePatches').insertMany(patchesForAllVehicles);
+    const updateResult = yield db.collection('vehicles').updateMany({
+      vin: {$in: vehicleList}
+    }, patchesToApply)
+    res.json(updateResult);
+  }).catch(err => {
+    return res.status(500).json(err.stack);
+  })
+})
 
 router.patch('/one', (req, res) => {
   const vin = req.query.vin;
