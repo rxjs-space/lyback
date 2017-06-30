@@ -20,6 +20,8 @@
         yield aclInstance.allow('admin', '/api/stats', '*');
         yield aclInstance.allow('admin', '/api/vehicles/survey', '*');
         yield aclInstance.allow('operationOperator', '/api/vehicles/survey', ['patch']);
+        yield aclInstance.allow('admin', '/api/vehicles/search', '*');
+        yield aclInstance.allow('operationOperator', '/api/vehicles/search', ['get']);
 
 
 ```
@@ -47,6 +49,7 @@ resources:
 /api/vehicles/one patch get
 /api/vehicles/reports get
 /api/vehicles/survey patch
+/api/vehicles/search
 
 /api/dismantling-orders GET
 /api/dismantling-orders/one GET PATCH

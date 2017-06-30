@@ -293,4 +293,74 @@ router.patch('/one', (req, res) => {
 
 router.get('/reports', require('./reports'));
 
+// search by vin or plateNo or batchId
+router.get('/search', (req, res) => {
+  const key = req.query.key;
+  if (!key) {
+    return res.status(400).json({
+      message: "insufficient parameters."
+    })
+  }
+  // res.send(req.query.key);
+  co(function*() {
+    const db = yield dbX.dbPromise;
+    let resultVINPlateNo = yield db.collection('vehicles').find({$or: [
+      {vin: {$regex: key}},
+      {'vehicle.plateNo': {$regex: key}},
+    ]}, {vin: 1, 'vehicle.plateNo': 1, _id: 0}).toArray();
+
+    resultVINPlateNo = resultVINPlateNo.map(item => ({
+      type: 'vp',
+      displayValue: `${item.vin} / ${item.vehicle.plateNo}`,
+      key: item.vin
+    }));
+
+    let resultBatchId = yield db.collection('vehicles').aggregate([
+      {$match: {batchId: {$regex: key}}},
+      {$group: {
+        _id: {batchId: '$batchId'}
+      }}
+    ]).toArray();
+
+    resultBatchId = resultBatchId.map(item => ({
+      type: 'vb',
+      displayValue: item._id.batchId,
+      key: item._id.batchId
+    }));
+
+    const result = [...resultBatchId, ...resultVINPlateNo];
+
+    res.json(result);
+    // const docs = yield db.collection('vehicles').find({vin: req.query.vin}/*, {
+    //   '_id': 0,
+    //   'createdAt': 0,
+    //   'createdBy': 0,
+    //   'modifiedAt': 0,
+    //   'modifiedBy': 0
+    // }*/).toArray();
+    // if (!docs.length) {return res.status(400).json({
+    //   message: `no vehicle whose vin is ${req.query.vin}`
+    // })}
+    // const vehicle = docs[0];
+    // if (req.query.returnIDOnly && JSON.parse(req.query.returnIDOnly)) {
+    //   return res.json({
+    //     _id: vehicle._id
+    //   }); 
+    // } else {
+    //   const userC = yield db.collection('users').find({_id: vehicle.createdBy}, {password: 0}).toArray();
+    //   const userM = yield db.collection('users').find({_id: vehicle.modifiedBy}, {password: 0}).toArray();
+    //   vehicle.createdBy = userC[0];
+    //   vehicle.modifiedBy = userM[0];
+    //   return res.send(vehicle);
+    // }
+
+  }).catch((err) => {
+    return res.status(500).json(err.stack);
+  })
+
+
+
+  
+})
+
 module.exports = router;
