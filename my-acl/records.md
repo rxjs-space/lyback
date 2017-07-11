@@ -22,6 +22,8 @@
         yield aclInstance.allow('operationOperator', '/api/vehicles/survey', ['patch']);
         yield aclInstance.allow('admin', '/api/vehicles/search', '*');
         yield aclInstance.allow('operationOperator', '/api/vehicles/search', ['get']);
+        yield aclInstance.allow('admin', '/api/users/one', '*');
+
 
 
 ```

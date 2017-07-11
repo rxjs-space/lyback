@@ -7,6 +7,7 @@ const startDay = (new Date());
 const onedayMS = 1000 * 60 * 60 * 24;
 const nineDaysAgo = (new Date(Date.parse(startDay) - onedayMS * 9));
 const nineDaysAgoDate = nineDaysAgo.toISOString().slice(0, 10);
+// console.log(nineDaysAgoDate);
 
 module.exports = (req, res) => {
   // const today = (new Date());
@@ -100,16 +101,21 @@ module.exports = (req, res) => {
     })
 
     let resultCompletedLastTenDays = yield db.collection('dismantlingOrders').aggregate([
+      {'$project': {
+        'vehicleType': 1,
+        'isAdHoc': 1,
+        'completedAt': {
+          '$substr': ['$completedAt', 0, 10]
+        }
+      }},
       {'$match': {
-        'completedAt': {'$gt': nineDaysAgoDate}
+        'completedAt': {'$gt': `${nineDaysAgoDate}`}
       }},
       {'$group': {
         '_id': {
           'vehicleType': '$vehicleType',
           'isAdHoc': '$isAdHoc',
-          'completedDate': {
-            '$substr': ['$completedAt', 0, 10]
-          }
+          'completedDate': '$completedAt'
         },
         'total': {'$sum': 1}
       }}

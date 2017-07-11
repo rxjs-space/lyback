@@ -24,6 +24,9 @@ router.post('/', function(req, res) {
     if (!userFound) return res.sendStatus(401);
     const passwordMatch = yield bcrypt.compare(password0, userFound.password);
     if (!passwordMatch) return res.sendStatus(401);
+    if (!userFound.isActive) return res.status(401).json({
+      message: 'Your account is inactive.'
+    })
     const aclInstance = new acl(new acl.mongodbBackend(db, 'acl_'));
 
     // const aclInstance = yield aclInstancePromise;

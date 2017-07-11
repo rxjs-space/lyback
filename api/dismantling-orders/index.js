@@ -213,7 +213,7 @@ router.get('/one', (req, res) => {
     const db = yield dbX.dbPromise;
     const docs = yield db.collection('dismantlingOrders').find({_id: dismantlingOrderId}).toArray();
     if (!docs.length) {return res.status(400).json({
-      message: `no dismantling order whose id is ${req.query.vin}`
+      message: `no dismantling order whose id is ${rdismantlingOrderId}`
     })}
     const dismantlingOrder = docs[0];
     const userC = yield db.collection('users').find({_id: dismantlingOrder.createdBy}, {password: 0}).toArray();
@@ -234,9 +234,14 @@ router.patch('/one', (req, res) => {
     })
   }
 
+  const patchedAt = (new Date()).toISOString();
+  req.body.patches.push(
+    {op: 'replace', path: '/modifiedAt', value: patchedAt},
+    {op: 'replace', path: '/modifiedBy', value: req.user._id}
+  );
   const dismantlingOrderId = new ObjectID(req.body.dismantlingOrderId);
   const patchesToInsert = {patches: req.body.patches};
-  patchesToInsert.createdAt = (new Date()).toISOString();
+  patchesToInsert.createdAt = patchedAt;
   patchesToInsert.createdBy = req.user._id;
   const patchesToApply = toMongodb(req.body.patches);
   let isCompleted, completedAt, patchesToInsertForVehicle, patchesToApplyForVehicle;
