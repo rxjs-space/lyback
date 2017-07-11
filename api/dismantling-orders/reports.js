@@ -28,7 +28,7 @@ module.exports = (req, res) => {
 
 
     let resultIdle = yield db.collection('vehicles').aggregate([
-      {'$match': {'dismantling': false, 'status.dismantled.done': false, 'auctioning': false, 'status.sold.done': false}},
+      {'$match': {'status2.dismantling': false, 'status.dismantled.done': false, 'status2.auctioning': false, 'status.sold.done': false}},
       {'$group': {
         '_id': {
           'vehicle.vehicleType': '$vehicle.vehicleType',

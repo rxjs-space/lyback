@@ -124,6 +124,7 @@ router.get('/', (req, res) => {
       'vin': 1,
       'entranceDate': 1,
       'status': 1,
+      'status2': 1,
       'vehicle.plateNo': 1,
       'vehicle.vehicleType': 1,
       'vehicle.brand': 1,

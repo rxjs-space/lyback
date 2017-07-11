@@ -171,7 +171,7 @@ router.post('/', (req, res) => {
       patches: [
         {op: 'replace', path: '/modifiedAt', value: vPatchedAt},
         {op: 'replace', path: '/modifiedBy', value: userId},
-        {op: 'replace', path: '/dismantling', value: true},
+        {op: 'replace', path: '/status2/dismantling', value: true},
       ],
       createdAt: vPatchedAt,
       createdBy: userId,
@@ -259,7 +259,7 @@ router.patch('/one', (req, res) => {
       patches: [
         {op: 'replace', path: '/status/dismantled/done', value: true},
         {op: 'replace', path: '/status/dismantled/date', value: completedAt.slice(0, 10)},
-        {op: 'replace', path: '/dismantling', value: false}
+        {op: 'replace', path: '/status2/dismantling', value: false}
       ]
     };
     patchesToApplyForVehicle = toMongodb(patchesToInsertForVehicle.patches);
