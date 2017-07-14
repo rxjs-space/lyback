@@ -156,11 +156,11 @@ module.exports = (req, res) => {
           }}
         ]).toArray();
 
-        let resultVehicleTypezOnlyFirstDone = yield db.collection('vehicles').aggregate([
+        let resultVehicleTypezFirstDone = yield db.collection('vehicles').aggregate([
           {'$match': {
             'vehicle.vehicleType': {'$ne': '3'},
             'status.firstSurvey.done': true,
-            'status.secondSurvey.done': false,
+            // 'status.secondSurvey.done': false,
             'status.firstSurvey.date': {'$gte': lastMondays['5']}
           }},
           {'$group': {
@@ -238,7 +238,7 @@ module.exports = (req, res) => {
 
         result = {
           resultVehicleType3: resultVehicleType3.map(mapper)[0], 
-          resultVehicleTypezOnlyFirstDone: resultVehicleTypezOnlyFirstDone.map(mapper)[0],
+          resultVehicleTypezFirstDone: resultVehicleTypezFirstDone.map(mapper)[0],
           resultVehicleTypezSecondDone: resultVehicleTypezSecondDone.map(mapper)[0]
         };
         break;

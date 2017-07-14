@@ -1,10 +1,11 @@
 const express = require('express');  
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const authenticate = require('./authenticate');
-const api = require('./api');
 const app = express();
 const port = process.env.PORT || 3001;
+
+const authenticate = require('./authenticate');
+const api = require('./api');
 const errorHandler = require('./error-handler');
 const dbX = require('./db');
 const myPassport = require('./my-passport')();
