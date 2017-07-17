@@ -18,11 +18,15 @@ const myPassport = require('./my-passport')();
 
 app.use((req, res, next) => {
   if (!dbX.db) {
-    return res.status(500).send({
-      error: 'failed to connect to db server.'
-    })
+    dbX.connect()
+      .then(() => next())
+      .catch(error => {
+        console.log(error);
+        return res.status(500).send({
+          error: 'failed to connect to db server.'
+        })
+      })
   }
-  return next();
 })
 
 app.use(cors());
