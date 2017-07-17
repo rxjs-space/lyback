@@ -26,6 +26,8 @@ app.use((req, res, next) => {
           error: 'failed to connect to db server.'
         })
       })
+  } else {
+    return next();
   }
 })
 
