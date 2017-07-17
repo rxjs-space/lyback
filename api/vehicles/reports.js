@@ -19,6 +19,39 @@ module.exports = (req, res) => {
     let result;
 
     switch (true) {
+      case req.query.title === 'mofcom':
+        let resultMofcomIdle = yield db.collection('vehicles').aggregate([
+          {$match: {'status.mofcomCertReady.done': false}},
+          {$group: {
+            _id: {
+              'vehicle.vehicleType': '$vehicle.vehicleType',
+              'status.mofcomEntry.done': '$status.mofcomEntry.done',
+              'status.mofcomCertReady.done': '$status.mofcomCertReady.done'
+            },
+            thisWeek: {$sum: {$cond: [
+              {$gte: ['$entranceDate', lastMondays['1']]}, 1, 0
+            ]}},
+            lastWeek: {$sum: {$cond: [
+              {$lt: ['$entranceDate', lastMondays['1']]}, {$cond: [
+                {$gte: ['$entranceDate', lastMondays['2']]}, 1, 0
+              ]}, 0
+            ]}},
+            evenEarlier: {$sum: {$cond: [
+              {$lt: ['$entranceDate', lastMondays['2']]}, 1, 0
+            ]}},
+            total: {$sum: 1}
+          }}
+        ]).toArray();
+        result = resultMofcomIdle.map(r => ({
+          'vehicle.vehicleType': r._id['vehicle.vehicleType'],
+          'status.mofcomEntry.done': r._id['status.mofcomEntry.done'],
+          'status.mofcomCertReady.done': r._id['status.mofcomCertReady.done'],
+          thisWeek: r.thisWeek,
+          lastWeek: r.lastWeek,
+          evenEarlier: r.evenEarlier,
+          total: r.total
+        }))
+        break;
       case req.query.title === 'entrance':
         result = {lastTenDays: [], lastFiveWeeks: []}
         const resultLatest10Days = yield db.collection('vehicles').aggregate([
