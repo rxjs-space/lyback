@@ -14,6 +14,9 @@ module.exports = (req, res) => {
 
   co(function*() {
     const db = yield dbX.dbPromise;
+    const ttQueryResult = yield db.collection('tt').find({name: 'types'}).toArray();
+    const vehicleTypeIdsForMotocycle = ttQueryResult[0]['vehicleTypeIdsForMotocycle'];
+    // console.log(vehicleTypeIdsForMotocycle);
     // const lastSundays = getLastSundays();
     const lastMondays = getLastMondays();
     let result;
@@ -157,7 +160,7 @@ module.exports = (req, res) => {
       case req.query.title === 'surveyCompleted':
         let resultVehicleType3 = yield db.collection('vehicles').aggregate([
           {'$match': {
-            'vehicle.vehicleType': '3',
+            'vehicle.vehicleType': {'$in': vehicleTypeIdsForMotocycle},
             'status.firstSurvey.done': true,
             'status.firstSurvey.date': {'$gte': lastMondays['5']}
           }},
@@ -191,7 +194,7 @@ module.exports = (req, res) => {
 
         let resultVehicleTypezFirstDone = yield db.collection('vehicles').aggregate([
           {'$match': {
-            'vehicle.vehicleType': {'$ne': '3'},
+            'vehicle.vehicleType': {'$nin': vehicleTypeIdsForMotocycle},
             'status.firstSurvey.done': true,
             // 'status.secondSurvey.done': false,
             'status.firstSurvey.date': {'$gte': lastMondays['5']}
@@ -227,7 +230,7 @@ module.exports = (req, res) => {
 
         let resultVehicleTypezSecondDone = yield db.collection('vehicles').aggregate([
           {'$match': {
-            'vehicle.vehicleType': {'$ne': '3'},
+            'vehicle.vehicleType': {'$nin': vehicleTypeIdsForMotocycle},
             'status.secondSurvey.done': true,
             'status.secondSurvey.date': {'$gte': lastMondays['5']}
           }},

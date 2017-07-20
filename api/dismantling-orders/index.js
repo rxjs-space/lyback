@@ -58,13 +58,29 @@ router.get('/', (req, res) => {
     }
   }
 
-  if (dbQuery['vehicleType'] === 'z') {
-    dbQuery['vehicleType'] = {$ne: '3'}
-  }  
 
-  console.log(dbQuery);
+
   co(function*() {
     const db = yield dbX.dbPromise;
+    const ttQueryResult = yield db.collection('tt').find({name: 'types'}).toArray();
+    const vehicleTypeIdsForMotocycle = ttQueryResult[0]['vehicleTypeIdsForMotocycle'];
+
+
+    switch(dbQuery['vehicleType']) {
+      case 'non-motorcycle':
+        dbQuery['vehicleType'] = {$nin: vehicleTypeIdsForMotocycle}
+        break;
+      case 'motorcycle':
+        dbQuery['vehicleType'] = {$in: vehicleTypeIdsForMotocycle}
+        break;
+    }
+
+  // if (dbQuery['vehicleType'] === 'z') {
+  //   dbQuery['vehicleType'] = {$ne: '3'}
+  // }  
+
+  console.log(dbQuery);
+
     const docs = yield db.collection('dismantlingOrders').find(dbQuery)
     .sort([['_id', -1]])
     .toArray();

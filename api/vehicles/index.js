@@ -29,7 +29,7 @@ const basedOnEntranceMonday = (entranceMonday, dbQuery, lastMondays) => {
       break;
     default:
       const nextMonday = new Date(Date.parse(new Date(entranceMonday)) + 1000 * 60 * 60 * 24 * 7).toISOString().slice(0, 10);
-      dbQuery['entranceDate'] = {$gt: entranceMonday, $lt: nextMonday};
+      dbQuery['entranceDate'] = {$gte: entranceMonday, $lt: nextMonday};
   }
   return dbQuery;
 }
@@ -86,39 +86,54 @@ Error: read ECONNRESET
 })
 
 router.get('/', (req, res) => {
-  const searchQuery = req.query;
-  const keys = Object.keys(searchQuery);
-  // turn string 'true' into boolean true
-  if (keys.length) {
-    for (const k of keys) {
-      if (searchQuery[k] === 'true') {searchQuery[k] = true; }
-      if (searchQuery[k] === 'false') {searchQuery[k] = false; }
-    }
-  }
-  let dbQuery = {};
-  // turn req.query into dbQuery
-  for (let k of keys) {
-    switch (k) {
-      case 'entranceWeek':
-        dbQuery = basedOnEntranceWeek[searchQuery[k]](dbQuery, getLastSundays());
-        break;
-      case 'entranceMonday':
-        dbQuery = basedOnEntranceMonday(searchQuery[k], dbQuery, getLastMondays());
-        break;
-      default:
-        dbQuery[k] = searchQuery[k];
-    }
 
-  }
-
-  // deal with vehicleType === 'z', that is not '3' (i.e, not motorbike)
-  if (dbQuery['vehicle.vehicleType'] === 'z') {
-    dbQuery['vehicle.vehicleType'] = {$ne: '3'}
-  }
-  // console.log(searchQuery);
-  console.log(dbQuery);
   co(function*() {
     const db = yield dbX.dbPromise;
+
+    const ttQueryResult = yield db.collection('tt').find({name: 'types'}).toArray();
+    const vehicleTypeIdsForMotocycle = ttQueryResult[0]['vehicleTypeIdsForMotocycle'];
+
+
+    const searchQuery = req.query;
+    const keys = Object.keys(searchQuery);
+    // turn string 'true' into boolean true
+    if (keys.length) {
+      for (const k of keys) {
+        if (searchQuery[k] === 'true') {searchQuery[k] = true; }
+        if (searchQuery[k] === 'false') {searchQuery[k] = false; }
+      }
+    }
+    let dbQuery = {};
+    // turn req.query into dbQuery
+    for (let k of keys) {
+      switch (k) {
+        case 'entranceWeek':
+          dbQuery = basedOnEntranceWeek[searchQuery[k]](dbQuery, getLastSundays());
+          break;
+        case 'entranceMonday':
+          dbQuery = basedOnEntranceMonday(searchQuery[k], dbQuery, getLastMondays());
+          break;
+        default:
+          dbQuery[k] = searchQuery[k];
+      }
+
+    }
+
+    switch(dbQuery['vehicle.vehicleType']) {
+      case 'non-motorcycle':
+        dbQuery['vehicle.vehicleType'] = {$nin: vehicleTypeIdsForMotocycle}
+        break;
+      case 'motorcycle':
+        dbQuery['vehicle.vehicleType'] = {$in: vehicleTypeIdsForMotocycle}
+        break;
+    }
+    // deal with vehicleType === 'z', that is not '3' (i.e, not motorbike)
+    // if (dbQuery['vehicle.vehicleType'] === 'z') {
+    //   dbQuery['vehicle.vehicleType'] = {$nin: '3'}
+    // }
+    // console.log(searchQuery);
+    console.log(dbQuery);
+
     const docs = yield db.collection('vehicles').find(dbQuery, {
       'id': 1,
       'vin': 1,
