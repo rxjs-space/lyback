@@ -46,7 +46,8 @@ router.post('/', function(req, res) {
     };
     const token = jwt.encode(payload, config.jwtSecret);
     return res.json({
-      token
+      token,
+      displayName: userFound.displayName,
     })
 
   }).catch(function(err) {

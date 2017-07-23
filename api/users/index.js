@@ -76,12 +76,13 @@ router.get('/one', (req, res) => {
 })
 
 router.post('/', (req, res) => {
-  if (!req.body.username ||!req.body.password) return res.status(400).json({
-    message: 'Usernme or password is missing.'
+  if (!req.body.username ||!req.body.password || !req.body.displayName) return res.status(400).json({
+    message: 'Usernme or password or display name is missing.'
   });
   /* consider adding verification for username and password */
 
   const username = req.body.username;
+  const displayName = req.body.displayName;
   const password = req.body.password;
   const roles = req.body.roles || ['guest'];
   co(function*() {
@@ -91,6 +92,7 @@ router.post('/', (req, res) => {
     const itemToInsert = {
       username,
       password: hash,
+      displayName,
       createdBy: req.user._id,
       createdAt: (new Date()).toISOString(),
       isActive: true,
