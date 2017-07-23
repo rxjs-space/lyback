@@ -96,7 +96,8 @@ router.post('/', (req, res) => {
       createdBy: req.user._id,
       createdAt: (new Date()).toISOString(),
       isActive: true,
-      facility: req.body.facility
+      facility: req.body.facility,
+      department: req.body.department
     }
     const insertFeedback = yield db.collection('users').insertOne(itemToInsert);
     // mongodb driver will add _id to itemToInsert after above ops

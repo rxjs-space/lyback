@@ -41,13 +41,15 @@ router.post('/', function(req, res) {
       sub: {
         _id: userFound._id.toHexString(),
         username: userFound.username,
-        roles
+        roles,
+        facility: userFound.facility,
+        department: userFound.department
       }
     };
     const token = jwt.encode(payload, config.jwtSecret);
     return res.json({
       token,
-      displayName: userFound.displayName,
+      displayName: userFound.displayName, // when including displayName in the token, the atob result is messy for Chinese characters
     })
 
   }).catch(function(err) {
