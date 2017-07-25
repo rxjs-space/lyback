@@ -127,6 +127,30 @@ router.get('/', (req, res) => {
         dbQuery['vehicle.vehicleType'] = {$in: vehicleTypeIdsForMotocycle}
         break;
     }
+    switch(dbQuery['vehicle.useCharacter']) {
+      case 'non-commercial':
+        dbQuery['vehicle.useCharacter'] = {$eq: 'uc006'}
+        break;
+      case 'commercial':
+        dbQuery['vehicle.useCharacter'] = {$ne: 'uc006'}
+        break;
+    }
+
+    if (dbQuery['ncnm']) { // 'not commercial' + 'motorcycle'
+      const dbQueryCopy = Object.assign({}, dbQuery);
+      delete dbQueryCopy['ncnm']
+      dbQuery = {
+        '$or': [
+            Object.assign({
+              'vehicle.vehicleType': {'$in': vehicleTypeIdsForMotocycle}
+            }, dbQueryCopy),
+            Object.assign({
+              'vehicle.vehicleType': {'$nin': vehicleTypeIdsForMotocycle},              
+              'vehicle.useCharacter': {'$eq': 'uc006'},
+            }, dbQueryCopy),
+        ]        
+      }
+    }
     // deal with vehicleType === 'z', that is not '3' (i.e, not motorbike)
     // if (dbQuery['vehicle.vehicleType'] === 'z') {
     //   dbQuery['vehicle.vehicleType'] = {$nin: '3'}
@@ -138,6 +162,7 @@ router.get('/', (req, res) => {
       'id': 1,
       'vin': 1,
       'entranceDate': 1,
+      'isSurveyNecessary': 1,
       'status': 1,
       'status2': 1,
       'vehicle.plateNo': 1,
