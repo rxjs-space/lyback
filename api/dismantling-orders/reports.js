@@ -28,12 +28,14 @@ module.exports = (req, res) => {
 
 
     let resultIdle = yield db.collection('vehicles').aggregate([
-      {'$match': {'status2.dismantling': false, 'status.dismantled.done': false, 'status2.auctioning': false, 'status.sold.done': false}},
+      {'$match': {
+        'status2.dismantling': false,
+        'status.dismantled.done': false,
+      }},
       {'$group': {
         '_id': {
           'vehicle.vehicleType': '$vehicle.vehicleType',
-          'status.firstSurvey.done': '$status.firstSurvey.done',
-          'status.secondSurvey.done': '$status.secondSurvey.done'
+          'status2.isDismantlingReady':'$status2.isDismantlingReady',
         },
         'thisWeek': {'$sum': {'$cond': [
           {'$gt': ['$entranceDate', lastSundays['1']]}, 1, 0
@@ -54,8 +56,7 @@ module.exports = (req, res) => {
     resultIdle = resultIdle.map(r => {
       return {
         'vehicle.vehicleType': r._id['vehicle.vehicleType'],
-        'status.firstSurvey.done': r._id['status.firstSurvey.done'],
-        'status.secondSurvey.done': r._id['status.secondSurvey.done'],
+        'status2.isDismantlingReady': r._id['status2.isDismantlingReady'],
         thisWeek: r.thisWeek,
         lastWeek: r.lastWeek,
         evenEarlier: r.evenEarlier,
