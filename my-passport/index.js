@@ -33,7 +33,8 @@ module.exports = function() {
       // if (expired) return done(null, false, {err: 'Token Expired', message: `The token has expired. Please login again.`});
       return done(null, {
         _id: userFound._id,
-        username: userFound.username
+        username: userFound.username,
+        facility: userFound.facility
       }, {message: 'cleared by passport'});
     }).catch(function(err) {
       return done(err);

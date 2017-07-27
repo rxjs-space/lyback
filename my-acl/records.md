@@ -23,7 +23,8 @@
         yield aclInstance.allow('admin', '/api/vehicles/search', '*');
         yield aclInstance.allow('operationOperator', '/api/vehicles/search', ['get']);
         yield aclInstance.allow('admin', '/api/users/one', '*');
-
+        yield aclInstance.allow('admin', '/api/users/staffs', '*');
+        yield aclInstance.allow('operationOperator', '/api/users/staffs', ['get']);
 
 
 ```
@@ -44,6 +45,7 @@ guest
 resources:
 /api/users post get
 /api/users/one patch get (not using /api/user/:id, because don't know how to setup acl for that)
+/api/users/staffs get (return staff list of the same facility as the current user)
 /api/roles post get
 /api/roles/one patch get
 

@@ -75,6 +75,17 @@ router.get('/one', (req, res) => {
   // res.send('ok');
 })
 
+router.get('/staffs', (req, res) => {
+  co(function*() {
+    const db = yield dbX.dbPromise;
+    const staffs = yield db.collection('users').find({facility: req.user.facility}, {username: 1, displayName: 1}).toArray();
+    res.json(staffs);
+  }).catch(function(err) {
+    return res.status(500).json(err.stack);
+  });
+  // res.json(req.user);
+})
+
 router.post('/', (req, res) => {
   if (!req.body.username ||!req.body.password || !req.body.displayName) return res.status(400).json({
     message: 'Usernme or password or display name is missing.'
