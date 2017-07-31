@@ -36,12 +36,6 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(myPassport.initialize());
 
-// const flash = require('connect-flash');
-// app.use(flash());
-// app.use((req, res, next) => {
-//   console.log(req.flash('error'));
-//   next();
-// })
 app.use('/authenticate', authenticate);
 app.use('/api', api);
 

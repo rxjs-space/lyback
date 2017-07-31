@@ -81,7 +81,7 @@ router.get('/', (req, res) => {
 
   console.log(dbQuery);
 
-    const docs = yield db.collection('dismantlingOrders').find(dbQuery)
+    const docs = yield db.collection('dismantlingOrders').find(dbQuery, {'partsAndWastesPP': 0})
     .sort([['_id', -1]])
     .toArray();
     res.json(docs);
@@ -261,7 +261,7 @@ router.patch('/one', (req, res) => {
   patchesToInsert.createdBy = req.user._id;
   const patchesToApply = toMongodb(req.body.patches);
   let isCompleted, completedAt, patchesToInsertForVehicle, patchesToApplyForVehicle;
-  console.log('patchForCompletedAt', JSON.stringify(patchesToInsert));
+
   const patchForCompletedAt = patchesToInsert.patches.filter(p => p.path === '/completedAt')[0];
   if (patchForCompletedAt) {
     isCompleted = true;
@@ -305,10 +305,7 @@ router.patch('/one', (req, res) => {
     res.json(updateResult);
   })
 
-
-  // todo: when the dismantlingOrder if completed, mark the vehicle as dismantling = false and dismantled.done as true with date
-  // todo: and then makr the dismantling with markedAt
-  res.json({ok: true})
+  // res.json({ok: true})
 })
 
 
