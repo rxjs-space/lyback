@@ -188,6 +188,7 @@ router.post('/', (req, res) => {
         {op: 'replace', path: '/modifiedAt', value: vPatchedAt},
         {op: 'replace', path: '/modifiedBy', value: userId},
         {op: 'replace', path: '/status2/dismantling', value: true},
+        {op: 'replace', path: '/status/dismantled/ref', value: dismantlingOrderId},
       ],
       createdAt: vPatchedAt,
       createdBy: userId,

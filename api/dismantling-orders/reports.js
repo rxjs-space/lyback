@@ -104,7 +104,7 @@ module.exports = (req, res) => {
     let resultCompletedLastTenDays = yield db.collection('dismantlingOrders').aggregate([
       {'$project': {
         'vehicleType': 1,
-        'isAdHoc': 1,
+        'orderType': 1,
         'completedAt': {
           '$substr': ['$completedAt', 0, 10]
         }
@@ -115,7 +115,7 @@ module.exports = (req, res) => {
       {'$group': {
         '_id': {
           'vehicleType': '$vehicleType',
-          'isAdHoc': '$isAdHoc',
+          'orderType': '$orderType',
           'completedDate': '$completedAt'
         },
         'total': {'$sum': 1}
@@ -124,7 +124,7 @@ module.exports = (req, res) => {
 
     resultCompletedLastTenDays = resultCompletedLastTenDays.map(r => ({
       vehicleType: r._id.vehicleType,
-      isAdHoc: r._id.isAdHoc,
+      orderType: r._id.orderType,
       completedDate: r._id.completedDate,
       total: r.total
     }));
