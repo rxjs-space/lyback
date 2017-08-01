@@ -25,7 +25,10 @@
         yield aclInstance.allow('admin', '/api/users/one', '*');
         yield aclInstance.allow('admin', '/api/users/staffs', '*');
         yield aclInstance.allow('operationOperator', '/api/users/staffs', ['get']);
-
+        yield aclInstance.allow('admin', '/api/inventory', '*');
+        yield aclInstance.allow('admin', '/api/inventory/reports', '*');
+        yield aclInstance.allow('operationOperator', '/api/inventory', ['get']);
+        yield aclInstance.allow('operationOperator', '/api/inventory/reports', ['get']);
 
 ```
 

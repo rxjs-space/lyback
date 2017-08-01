@@ -58,6 +58,42 @@ router.post('/', (req, res) => {
     patches.createdAt = newVehicle.createdAt;
     patches.createdBy = newVehicle.createdBy;
     patches.vin = newVehicle.vin;
+    // get vtbmymId
+    if (newVehicle.vtbmym === 'new') {
+      console.log('getting vtbmym id');
+      if (!newVehicle.vehicle.vehicleType || !newVehicle.vehicle.brand || 
+        !newVehicle.vehicle.model || !newVehicle.vehicle.registrationDate
+      ) {
+        throw new Error('insufficient info for getting vtbmym id.');
+      }
+      const vtbmymFindResult = yield db.collection('vtbmym').find({
+        vehicleType: newVehicle.vehicle.vehicleType,
+        brand: newVehicle.vehicle.brand,
+        model: newVehicle.vehicle.model,
+        year: newVehicle.vehicle.registrationDate.substring(0, 4),
+        month: newVehicle.vehicle.registrationDate.substring(4, 2)
+      }).toArray();
+      if (vtbmymFindResult.length) {
+        newVehicle.vtbmym = vtbmymFindResult[0]['_id'];
+        const vtbmymPatch = patches.patches.find(p => p.path.indexOf('vtbmym'));
+        vtbmymPatch.value = vtbmymFindResult[0]['_id'];
+      } else {
+        const vtbmymInsertResult = yield db.collection('vtbmym').insert({
+          vehicleType: newVehicle.vehicle.vehicleType,
+          brand: newVehicle.vehicle.brand,
+          model: newVehicle.vehicle.model,
+          year: newVehicle.vehicle.registrationDate.substring(0, 4),
+          month: newVehicle.vehicle.registrationDate.substring(4, 2)
+        });
+        // console.log(vtbmymInsertResult);
+        // console.log(Object.keys(vtbmymInsertResult));
+        newVehicle.vtbmym = vtbmymInsertResult['insertedIds'][0];
+        const vtbmymPatch = patches.patches.find(p => p.path.indexOf('vtbmym'));
+        vtbmymPatch.value = vtbmymInsertResult['insertedIds'][0];
+      }
+    };
+
+
     console.log('inserting patches');
     const patchResult = yield db.collection('vehiclePatches').insert(patches);
     console.log('inserting vehicle');
