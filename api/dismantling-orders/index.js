@@ -121,25 +121,18 @@ router.post('/', (req, res) => {
     const db = yield dbX.dbPromise;
     // try find the last dismantling order with the same vin
     // get dismantlingOrder by vin, if no, continue
-    // if found, check if normal, halt; if adHoc, check if active
+    // if found, check if normal, halt;
     const docs = yield db.collection('dismantlingOrders')
       .find({vin: newDismantlingOrder.vin})
       .sort([['_id', -1]])
       .limit(1)
       .toArray();
     if (docs.length) {
-      const lastDismantlingOrderWithSameVIN = docs[0];
-      if (lastDismantlingOrderWithSameVIN.isAdHoc === '1') {
-        if (!lastDismantlingOrderWithSameVIN.completedAt) {
-          return res.status(400).json({
-            message: `存在 VIN 为${newDismantlingOrder.vin}且尚未完成的临时拆解计划。`
-          })
-        }
-      } else {
-        return res.status(400).json({
-          message: `已存在 VIN 为 ${newDismantlingOrder.vin} 的正常拆解计划。`
-        })
-      }
+      // const lastDismantlingOrderWithSameVIN = docs[0];
+      return res.status(400).json({
+        message: `已存在 VIN 为 ${newDismantlingOrder.vin} 的正常拆解计划。`
+      })
+
     }
 
     // console.log(JSON.stringify(req.body));
@@ -161,10 +154,10 @@ router.post('/', (req, res) => {
 
     /*
       save procedure
-      1) save dismantlingOrderPatches and get the _id_dop of inserted doc
-      2) save dismantlingOrder and get the _id_do of inserted doc
-      3) update dismantlingOrderPatches(_id_dop) with the _id_do
-      4) update vehiclePatches(vin) with _id_dop
+      1) save dismantlingOrderPatches and get the dop._id of inserted doc
+      2) save dismantlingOrder and get the do._id of inserted doc
+      3) update dismantlingOrderPatches(dop._id) with the do._id
+      4) update vehiclePatches(vin) with dop._id
       5) update vehicle(vin), mark dismantling as true
     
     */
