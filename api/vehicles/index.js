@@ -200,6 +200,8 @@ router.get('/', (req, res) => {
       'entranceDate': 1,
       'isSurveyNecessary': 1,
       'vtbmym': 1,
+      'estimatedSurveyDateFirst': 1,
+      'estimatedSurveyDateSecond': 1,
       'status': 1,
       'status2': 1,
       'vehicle.plateNo': 1,
