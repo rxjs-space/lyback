@@ -199,11 +199,13 @@ router.get('/', (req, res) => {
       'vin': 1,
       'entranceDate': 1,
       'isSurveyNecessary': 1,
+      'vtbmym': 1,
       'status': 1,
       'status2': 1,
       'vehicle.plateNo': 1,
       'vehicle.vehicleType': 1,
       'vehicle.brand': 1,
+      'vehicle.useCharacter': 1,
       'dismantling': 1
     })
     .sort([['_id', -1]])
