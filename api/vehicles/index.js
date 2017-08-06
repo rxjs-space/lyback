@@ -2,6 +2,7 @@ const router = require('express').Router();
 const co = require('co');
 const toMongodb = require('jsonpatch-to-mongodb');
 
+const strContains = require('../../utils').strContains;
 const dbX = require('../../db');
 const getLastSundays = require('../../utils/last-sundays');
 const getLastMondays = require('../../utils/last-mondays');
@@ -35,12 +36,63 @@ const basedOnEntranceMonday = (entranceMonday, dbQuery, lastMondays) => {
 }
 
 
+const getVtbmymIdPromise = (db, patches, newVehicle) => {
+  return new Promise((resolve, reject) => {
+    co(function*() {
+      const vtbmymPatch = patches.patches.find(p => p.path.indexOf('vtbmym'));
+      // if (vtbmymPatch.value === 'new') {
+        let vehicleType, brand, model, year, month;
+        if (newVehicle) {
+          vehicleType = newVehicle.vehicle.vehicleType;
+          brand = newVehicle.vehicle.brand;
+          model = newVehicle.vehicle.model;
+          year = newVehicle.vehicle.registrationDate.substring(0, 4);
+          month = newVehicle.vehicle.registrationDate.substring(4, 2);
+        } else {
+          const vin = patches.vin;
+          const findVehicleResult = yield db.collection('vehicles').find({vin}, {'vehicle.vehicleType': 1}).toArray();
+          vehicleType = findVehicleResult[0]['vehicle.vehicleType'];
+          brand = patches.patches.find(p => p.path.indexOf('brand')).value;
+          model = patches.patches.find(p => p.path.indexOf('model')).value;
+          const registrationDate = patches.patches.find(p => p.path.indexOf('registrationDate') > -1).value;
+          year = registrationDate.substring(0, 4);
+          month = registrationDate.substring(4, 2);
+        }
+
+        let vtbmymId;
+        const vtbmymFindResult = yield db.collection('vtbmym').find({
+          vehicleType, brand, model, year, month
+        }).toArray();
+
+        if (vtbmymFindResult.length) {
+          vtbmymId = vtbmymFindResult[0]['_id'];
+        } else {
+          const vtbmymInsertResult = yield db.collection('vtbmym').insert({
+            vehicleType, brand, model, year, month
+          });
+          vtbmymId = vtbmymInsertResult['insertedIds'][0];
+        }
+
+        resolve(vtbmymId);
+      // } else {
+      //   resolve(null);
+      // }
+
+    }).catch(error => reject(error));
+
+  })
+}
+
+
+
+
 router.post('/', (req, res) => {
   if (!req.body) {
     return res.status(400).json({
       message: 'no data provided.'
     })
   }
+
   if (!req.body.vehicle || !req.body.patches) {
     return res.status(400).json({
       message: "insufficient parameters."
@@ -59,39 +111,48 @@ router.post('/', (req, res) => {
     patches.createdBy = newVehicle.createdBy;
     patches.vin = newVehicle.vin;
     // get vtbmymId
-    if (newVehicle.vtbmym === 'new') {
-      console.log('getting vtbmym id');
-      if (!newVehicle.vehicle.vehicleType || !newVehicle.vehicle.brand || 
-        !newVehicle.vehicle.model || !newVehicle.vehicle.registrationDate
-      ) {
-        throw new Error('insufficient info for getting vtbmym id.');
-      }
-      const vtbmymFindResult = yield db.collection('vtbmym').find({
-        vehicleType: newVehicle.vehicle.vehicleType,
-        brand: newVehicle.vehicle.brand,
-        model: newVehicle.vehicle.model,
-        year: newVehicle.vehicle.registrationDate.substring(0, 4),
-        month: newVehicle.vehicle.registrationDate.substring(4, 2)
-      }).toArray();
-      if (vtbmymFindResult.length) {
-        newVehicle.vtbmym = vtbmymFindResult[0]['_id'];
-        const vtbmymPatch = patches.patches.find(p => p.path.indexOf('vtbmym'));
-        vtbmymPatch.value = vtbmymFindResult[0]['_id'];
-      } else {
-        const vtbmymInsertResult = yield db.collection('vtbmym').insert({
-          vehicleType: newVehicle.vehicle.vehicleType,
-          brand: newVehicle.vehicle.brand,
-          model: newVehicle.vehicle.model,
-          year: newVehicle.vehicle.registrationDate.substring(0, 4),
-          month: newVehicle.vehicle.registrationDate.substring(4, 2)
-        });
-        // console.log(vtbmymInsertResult);
-        // console.log(Object.keys(vtbmymInsertResult));
-        newVehicle.vtbmym = vtbmymInsertResult['insertedIds'][0];
-        const vtbmymPatch = patches.patches.find(p => p.path.indexOf('vtbmym'));
-        vtbmymPatch.value = vtbmymInsertResult['insertedIds'][0];
-      }
-    };
+    // if (newVehicle.vtbmym === 'new') {
+    //   console.log('getting vtbmym id');
+    //   if (!newVehicle.vehicle.vehicleType || !newVehicle.vehicle.brand || 
+    //     !newVehicle.vehicle.model || !newVehicle.vehicle.registrationDate
+    //   ) {
+    //     throw new Error('insufficient info for getting vtbmym id.');
+    //   }
+    //   const vtbmymFindResult = yield db.collection('vtbmym').find({
+    //     vehicleType: newVehicle.vehicle.vehicleType,
+    //     brand: newVehicle.vehicle.brand,
+    //     model: newVehicle.vehicle.model,
+    //     year: newVehicle.vehicle.registrationDate.substring(0, 4),
+    //     month: newVehicle.vehicle.registrationDate.substring(4, 2)
+    //   }).toArray();
+    //   if (vtbmymFindResult.length) {
+    //     newVehicle.vtbmym = vtbmymFindResult[0]['_id'];
+    //     const vtbmymPatch = patches.patches.find(p => p.path.indexOf('vtbmym'));
+    //     vtbmymPatch.value = vtbmymFindResult[0]['_id'];
+    //   } else {
+    //     const vtbmymInsertResult = yield db.collection('vtbmym').insert({
+    //       vehicleType: newVehicle.vehicle.vehicleType,
+    //       brand: newVehicle.vehicle.brand,
+    //       model: newVehicle.vehicle.model,
+    //       year: newVehicle.vehicle.registrationDate.substring(0, 4),
+    //       month: newVehicle.vehicle.registrationDate.substring(4, 2)
+    //     });
+    //     // console.log(vtbmymInsertResult);
+    //     // console.log(Object.keys(vtbmymInsertResult));
+    //     newVehicle.vtbmym = vtbmymInsertResult['insertedIds'][0];
+    //     const vtbmymPatch = patches.patches.find(p => p.path.indexOf('vtbmym'));
+    //     vtbmymPatch.value = vtbmymInsertResult['insertedIds'][0];
+    //   }
+    // };
+
+    const vtbmymPatch = patches.patches.find(p => p.path.indexOf('vtbmym') > -1);
+    console.log('vtbmymPatch', vtbmymPatch);
+    if (vtbmymPatch && vtbmymPatch.value === 'new') {
+      const vtbmymId = yield getVtbmymIdPromise(db, patches, newVehicle);
+      newVehicle.vtbmym = vtbmymId;
+      vtbmymPatch.value = vtbmymId;
+    }
+
 
 
     console.log('inserting patches');
@@ -114,6 +175,15 @@ Error: read ECONNRESET
     at TCP.onread (net.js:569:26)
     
     */
+
+    /* 
+
+    Error: read ECONNRESET
+        at exports._errnoException (util.js:1022:11)
+        at TCP.onread (net.js:569:26)
+
+    */
+
     
     );
     return res.status(500).json(err.stack);
@@ -330,8 +400,16 @@ router.patch('/one', (req, res) => {
     patches.createdAt = patchedAt;
     patches.createdBy = req.user._id;
     patches.vin = vin;
-    const patchesToApply = toMongodb(req.body.patches);
-    // console.log(req.body.patches);
+
+    const vtbmymPatch = patches.patches.find(p => p.path.indexOf('vtbmym') > -1);
+    if (vtbmymPatch && vtbmymPatch.value === 'new') {
+      const vtbmymId = yield getVtbmymIdPromise(db, patches);
+      vtbmymPatch.value = vtbmymId;
+    }
+
+
+    const patchesToApply = toMongodb(patches.patches);
+    // console.log(patches.patches);
     console.log(patchesToApply);
     const patchResult = yield db.collection('vehiclePatches').insert(patches);
     const updateResult = yield db.collection('vehicles').updateOne(

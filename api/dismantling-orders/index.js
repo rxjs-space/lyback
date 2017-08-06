@@ -186,7 +186,7 @@ router.post('/', (req, res) => {
       createdAt: vPatchedAt,
       createdBy: userId,
       trigger: 'dismantlingOrderPatches',
-      triggerId: patchesId
+      triggerRef: patchesId
     };
     const vPatchesSaveResult = yield db.collection('vehiclePatches').insert(vPatches);
     writeStatus.vehiclePatches = true;
@@ -261,19 +261,6 @@ router.patch('/one', (req, res) => {
     isCompleted = true;
     completedAt = patchForCompletedAt.value;
   }
-  // const isCompleted = JSON.stringify(patchesToInsert.patches).indexOf('completedAt');
-  if (isCompleted) { // if the dismantlingOrder is completed, mark the corresponding vehicle
-    patchesToInsertForVehicle = {
-      createdAt: patchesToInsert.createdAt,
-      createdBy: patchesToInsert.createdBy,
-      patches: [
-        {op: 'replace', path: '/status/dismantled/done', value: true},
-        {op: 'replace', path: '/status/dismantled/date', value: completedAt.slice(0, 10)},
-        {op: 'replace', path: '/status2/dismantling', value: false}
-      ]
-    };
-    patchesToApplyForVehicle = toMongodb(patchesToInsertForVehicle.patches);
-  }
 
 
   co(function*() {
@@ -281,12 +268,31 @@ router.patch('/one', (req, res) => {
     // insert patches for dismantling order
     const insertPatchesToDismantlingOrderPatchesResult = 
       yield db.collection('dismantlingOrderPatches').insert(patchesToInsert);
+    const patchesId = insertPatchesToDismantlingOrderPatchesResult.insertedIds[0];
     // update dismantling order
     const updateResult = yield db.collection('dismantlingOrders').updateOne(
       {_id: dismantlingOrderId},
       patchesToApply
     );
     if (isCompleted) {
+
+
+      patchesToInsertForVehicle = {
+        createdAt: patchesToInsert.createdAt,
+        createdBy: patchesToInsert.createdBy,
+        trigger: 'dismantlingOrderPatches',
+        triggerRef: patchesId,
+        patches: [
+          {op: 'replace', path: '/status/dismantled/done', value: true},
+          {op: 'replace', path: '/status/dismantled/date', value: completedAt.slice(0, 10)},
+          {op: 'replace', path: '/status2/dismantling', value: false},
+          {op: 'replace', path: '/modifiedAt', value: patchesToInsert.createdAt},
+          {op: 'replace', path: '/modifiedBy', value: patchesToInsert.createdBy},
+        ]
+      };
+      patchesToApplyForVehicle = toMongodb(patchesToInsertForVehicle.patches);
+
+      
       // insert patches for vehicle
       const insertPatchesToVehiclePatchesResult = 
         yield db.collection('vehiclePatches').insert(patchesToInsertForVehicle);
