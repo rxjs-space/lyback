@@ -2,7 +2,9 @@ const router = require('express').Router();
 const co = require('co');
 const toMongodb = require('jsonpatch-to-mongodb');
 const ObjectID = require('mongodb').ObjectID;
+const coForEach = require('co-foreach');
 
+const strContains = require('../../utils').strContains;
 const getLastSundays = require('../../utils/last-sundays');
 const dbX = require('../../db');
 
@@ -148,7 +150,6 @@ router.post('/', (req, res) => {
     Object.assign(patches, {
       createdAt: patchedAt,
       createdBy: userId,
-      vin: newDismantlingOrder.vin,
       dismantlingOrderId: 'tba'
     });
 
@@ -250,10 +251,11 @@ router.patch('/one', (req, res) => {
     {op: 'replace', path: '/modifiedBy', value: req.user._id}
   );
   const dismantlingOrderId = new ObjectID(req.body.dismantlingOrderId);
-  const patchesToInsert = {patches: req.body.patches};
+  const patchesToInsert = {patches: req.body.patches, dismantlingOrderId};
   patchesToInsert.createdAt = patchedAt;
   patchesToInsert.createdBy = req.user._id;
-  const patchesToApply = toMongodb(req.body.patches);
+
+  const patchesToApply = toMongodb(patchesToInsert.patches);
   let isCompleted, completedAt, patchesToInsertForVehicle, patchesToApplyForVehicle;
 
   const patchForCompletedAt = patchesToInsert.patches.filter(p => p.path === '/completedAt')[0];
@@ -262,18 +264,29 @@ router.patch('/one', (req, res) => {
     completedAt = patchForCompletedAt.value;
   }
 
+  const writeStatusPatchDismantlingOrder = {
+    insertPatchesToDismantlingOrderPatches: null,
+    patchDismantlingOrder: null,
+    insertPatchesToVehiclePatches: null,
+    patchVehicle: null,
+    insertInventory: null,
+    insertPatchesToDismantlingOrderPatchesWithProductIds: null,
+    updateProductIdsInDismantlingOrder: null,
+  };
 
   co(function*() {
     const db = yield dbX.dbPromise;
     // insert patches for dismantling order
     const insertPatchesToDismantlingOrderPatchesResult = 
       yield db.collection('dismantlingOrderPatches').insert(patchesToInsert);
+    writeStatusPatchDismantlingOrder.insertPatchesToDismantlingOrderPatches = true;
     const patchesId = insertPatchesToDismantlingOrderPatchesResult.insertedIds[0];
     // update dismantling order
     const updateResult = yield db.collection('dismantlingOrders').updateOne(
       {_id: dismantlingOrderId},
       patchesToApply
     );
+    writeStatusPatchDismantlingOrder.patchDismantlingOrder = true;
     if (isCompleted) {
 
 
@@ -296,13 +309,115 @@ router.patch('/one', (req, res) => {
       // insert patches for vehicle
       const insertPatchesToVehiclePatchesResult = 
         yield db.collection('vehiclePatches').insert(patchesToInsertForVehicle);
+      writeStatusPatchDismantlingOrder.insertPatchesToVehiclePatches = true;
+
       // update vehicle
       const updateVehicleResult = yield db.collection('vehicles').update(
         {vin: req.body.vin},
         patchesToApplyForVehicle
       )
+      writeStatusPatchDismantlingOrder.patchVehicle = true;
     }
+
+    // deal with inventoryInput
+    // "/partsAndWastesPP/0/inventoryInputDate"
+    const patchesForInventoryInput = patchesToInsert.patches.filter(p => {
+      return strContains(p.path, 'inventoryInputDate');
+    });
+    console.log('patchesForInventoryInput', patchesForInventoryInput);
+    if (patchesForInventoryInput.length) {
+      // insert into invetory and its patches
+      // vin, vtbmymId, typeId, inputDate, inputRef(if pw is from non-dismantling), outputDate, outputType, outputRef
+      // createdAt, createdBy, modifiedAt, modifiedBy
+      const dbFindVehicleResult = yield db.collection('vehicles').find({vin: req.body.vin}, {vtbmym: 1}).toArray();
+      const vtbmymId = dbFindVehicleResult[0]['vtbmym'];
+      const dbFindDOResult = yield db.collection('dismantlingOrders').find({_id: dismantlingOrderId}).toArray();
+      const dismantlingOrder = dbFindDOResult[0];
+      const items = []; // unwind to 1 item a line, according to productionCount
+      patchesForInventoryInput.forEach(patch => {
+        const itemIndexInArray = patch.path.split('/')[2];
+        const pwpp = dismantlingOrder.partsAndWastesPP[itemIndexInArray];
+        for (i = 1; i <= pwpp.countProduction; i++) {
+          items.push({
+            typeId: pwpp.id,
+            inputDate: patch.value,
+            itemIndexInArray,
+            i
+          })
+        }
+      });
+
+      yield coForEach(items, function*(item) {
+        const newIventoryItem = {
+          vin: req.body.vin,
+          vtbmymId,
+          typeId: item.typeId,
+          inputDate: item.inputDate,
+          createdAt: patchesToInsert.createdAt,
+          createdBy: patchesToInsert.createdBy
+        };
+        const inventoryInsertResult = yield db.collection('inventory').insert(newIventoryItem);
+        const inventoryItemId = inventoryInsertResult.insertedIds[0];
+        item.inventoryItemId = inventoryItemId; // add inventoryItemId property to item, in order to update pwpp.productIds
+        const inventoryInputPatches = {
+          inventoryItemId,
+          patches: [
+            {op: 'replace', path: '/vin', value: req.body.vin},
+            {op: 'replace', path: '/vtbmymId', value: vtbmymId},
+            {op: 'replace', path: '/typeId', value: item.typeId},
+            {op: 'replace', path: '/inputDate', value: item.inputDate},
+          ],
+          createdAt: patchesToInsert.createdAt,
+          createdBy: patchesToInsert.createdBy,
+          trigger: 'dismantlingOrderPatchOne',
+          triggerRef: dismantlingOrderId
+        };
+        const insertPatchesResult = yield db.collection('inventoryPatches').insert(inventoryInputPatches);
+
+      })
+
+      writeStatusPatchDismantlingOrder.insertInventory = true;
+
+      const patchesToInsertWithProductIds = {
+        dismantlingOrderId,
+        patches: [],
+        createdAt: patchesToInsert.createdAt,
+        createdBy: patchesToInsert.createdBy
+      };
+      items.forEach(item => {
+        const patch = {
+          op: 'replace',
+          path: `/partsAndWastesPP.${item.itemIndexInArray}.productIds.${item.i - 1}`,
+          value: item.inventoryItemId
+        }
+        patchesToInsertWithProductIds.patches.push(patch);
+      })
+
+      // mark inventoryInputDone as true
+      patchesToInsertWithProductIds.patches.push({
+        op: 'replace',
+        path: '/inventoryInputDone',
+        value: true
+      });
+      const insertPatchesWithProductIds = yield db.collection('dismantlingOrderPatches').insert(patchesToInsertWithProductIds);
+      writeStatusPatchDismantlingOrder.insertPatchesToDismantlingOrderPatchesWithProductIds = true;
+      const patchesToApplayWithProductIds = toMongodb(patchesToInsertWithProductIds.patches);
+      console.log(patchesToApplayWithProductIds);
+      const updateDismantlingOrdersWithProductIdsResult = yield db.collection('dismantlingOrders').updateOne(
+        {_id: dismantlingOrderId},
+        patchesToApplayWithProductIds
+      )
+      
+      writeStatusPatchDismantlingOrder.updateProductIdsInDismantlingOrder = true;
+
+    }
+    
+
+    console.log('writeStatusPatchDismantlingOrder:', writeStatusPatchDismantlingOrder);
+
     res.json(updateResult);
+  }).catch((err) => {
+    return res.status(500).json(err.stack);
   })
 
   // res.json({ok: true})
