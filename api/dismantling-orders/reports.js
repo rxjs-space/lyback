@@ -70,6 +70,7 @@ module.exports = (req, res) => {
         {
           '_id': {
             'vehicleType': '$vehicleType',
+            'orderType': '$orderType',
             'started': {
               '$gt': [ { '$ifNull': [ '$startedAt', ''] }, ''  ]
             }
@@ -93,6 +94,7 @@ module.exports = (req, res) => {
     resultProgressing = resultProgressing.map(r => {
       return {
         vehicleType: r._id.vehicleType,
+        orderType: r._id.orderType,
         started: r._id.started,
         thisWeek: r.thisWeek,
         lastWeek: r.lastWeek,

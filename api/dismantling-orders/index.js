@@ -276,6 +276,11 @@ router.patch('/one', (req, res) => {
 
   co(function*() {
     const db = yield dbX.dbPromise;
+    // get dismantlingOrderType
+    const currentDismantlingOrderState = yield db.collection('dismantlingOrders').find({
+      _id: dismantlingOrderId
+    }, {orderType: 1}).toArray();
+    const dismanltingOrderTypeX = currentDismantlingOrderState[0].orderType;
     // insert patches for dismantling order
     const insertPatchesToDismantlingOrderPatchesResult = 
       yield db.collection('dismantlingOrderPatches').insert(patchesToInsert);
@@ -287,7 +292,7 @@ router.patch('/one', (req, res) => {
       patchesToApply
     );
     writeStatusPatchDismantlingOrder.patchDismantlingOrder = true;
-    if (isCompleted) {
+    if (isCompleted && dismanltingOrderTypeX === 'dot1' /* is normal plan */) {
 
 
       patchesToInsertForVehicle = {

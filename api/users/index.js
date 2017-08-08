@@ -78,7 +78,9 @@ router.get('/one', (req, res) => {
 router.get('/staffs', (req, res) => {
   co(function*() {
     const db = yield dbX.dbPromise;
-    const staffs = yield db.collection('users').find({facility: req.user.facility}, {username: 1, displayName: 1}).toArray();
+    const staffs = yield db.collection('users').find({
+      facility: req.user.facility,
+    }, {username: 1, displayName: 1}).toArray();
     res.json(staffs);
   }).catch(function(err) {
     return res.status(500).json(err.stack);
