@@ -324,7 +324,7 @@ router.patch('/one', (req, res) => {
     const patchesForInventoryInput = patchesToInsert.patches.filter(p => {
       return strContains(p.path, 'inventoryInputDate');
     });
-    console.log('patchesForInventoryInput', patchesForInventoryInput);
+    // console.log('patchesForInventoryInput', patchesForInventoryInput);
     if (patchesForInventoryInput.length) {
       // insert into invetory and its patches
       // vin, vtbmymId, typeId, inputDate, inputRef(if pw is from non-dismantling), outputDate, outputType, outputRef
@@ -402,7 +402,7 @@ router.patch('/one', (req, res) => {
       const insertPatchesWithProductIds = yield db.collection('dismantlingOrderPatches').insert(patchesToInsertWithProductIds);
       writeStatusPatchDismantlingOrder.insertPatchesToDismantlingOrderPatchesWithProductIds = true;
       const patchesToApplayWithProductIds = toMongodb(patchesToInsertWithProductIds.patches);
-      console.log(patchesToApplayWithProductIds);
+      // console.log(patchesToApplayWithProductIds);
       const updateDismantlingOrdersWithProductIdsResult = yield db.collection('dismantlingOrders').updateOne(
         {_id: dismantlingOrderId},
         patchesToApplayWithProductIds

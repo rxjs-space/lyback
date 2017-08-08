@@ -1,7 +1,8 @@
 const co = require('co');
 const dbX = require('../../db');
 const getLastMondays = require('../../utils/last-mondays');
-const getTenDaysAgo = require('../../utils/ten-days-ago');
+
+const getDaysAgoDate = require('../../utils').getDaysAgoDate;
 
 module.exports = (req, res) => {
   co(function*() {
@@ -32,6 +33,43 @@ module.exports = (req, res) => {
           _id: r._id._id,
           orderType: r._id.orderType,
           vin: r._id.vin
+        }));
+        break;
+      case req.query.title === 'inputDone':
+        const days = req.query.days * 1;
+        let resultInputDone = yield db.collection('inventory').aggregate([
+          {'$project': {
+            'typeId': 1,
+            'inputDate': {
+              '$substr': ['$inputDate', 0, 10]
+            },
+            'isFromDismantling': {
+              '$cond': { 
+                if: { '$gt': [ { '$ifNull': [ '$vin', ''] }, '' ] }, 
+                then: true,
+                else: false 
+              }
+            }
+          }},
+          {'$match': {
+            'inputDate': {'$gt': `${getDaysAgoDate(new Date(), days)}`}
+          }},
+          {
+            '$group': {
+              '_id': {
+                'typeId': '$typeId',
+                'inputDate': '$inputDate',
+                'isFromDismantling': '$isFromDismantling'
+              },
+              'total': { '$sum': 1 }
+            }
+          }
+        ]).toArray();
+        result = resultInputDone.map(r => ({
+          typeId: r._id.typeId,
+          inputDate: r._id.inputDate,
+          isFromDismantling: r._id.isFromDismantling,
+          total: r.total
         }));
         break;
     }

@@ -110,7 +110,7 @@ module.exports = (req, res) => {
         }
       }},
       {'$match': {
-        'completedAt': {'$gt': `${nineDaysAgoDate}`}
+        'completedAt': {'$gte': `${nineDaysAgoDate}`}
       }},
       {'$group': {
         '_id': {
