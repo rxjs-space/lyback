@@ -125,7 +125,7 @@ router.post('/', (req, res) => {
     // get dismantlingOrder by vin, if no, continue
     // if found, check if normal, halt;
     const docs = yield db.collection('dismantlingOrders')
-      .find({vin: newDismantlingOrder.vin})
+      .find({vin: newDismantlingOrder.vin, orderType: 'dot1'})
       .sort([['_id', -1]])
       .limit(1)
       .toArray();
