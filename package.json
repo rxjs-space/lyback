@@ -5,6 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "acl": "^0.4.10",
+    "acl-mirror": "^0.4.11",
     "bcrypt": "^1.0.2",
     "bluebird": "^3.5.0",
     "body-parser": "^1.17.2",

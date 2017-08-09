@@ -2,7 +2,7 @@ const router = require('express').Router();
 const bcrypt = require('bcrypt');
 const jwt = require("jwt-simple"); 
 const co = require('co');
-const acl = require('acl');
+const acl = require('acl-mirror');
 
 const dbX = require('../db');
 const config = require('../config');

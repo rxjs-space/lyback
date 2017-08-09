@@ -1,5 +1,5 @@
 const dbX = require('../db');
-const acl = require('acl');
+const acl = require('acl-mirror');
 const co = require('co');
 let aclInstance;
 
