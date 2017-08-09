@@ -2,7 +2,7 @@ module.exports = () => {
 
   const today = (new Date());
   const onedayMS = 1000 * 60 * 60 * 24;
-  const todayDay = today.getDay();
+  const todayDay = today.getUTCDay();
   let todayDayFromMonday;
   switch (todayDay) {
     case 0:
