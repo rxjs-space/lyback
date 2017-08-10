@@ -121,6 +121,152 @@ module.exports = (req, res) => {
           ]
         }))        
         break;
+      case req.query.title === 'surveyIdle3':
+        let resultIsSurveyNotReady, resultZeroSurvey, resultSurveyReadyOneSurvey, resultSurveyReadyTwoSurveys;
+        resultIsSurveyNotReady = yield db.collection('vehicles').aggregate([
+          {'$match': {
+            'status2.isSurveyReady': false,
+            'surveyRounds': {'$ne': 'zero'}
+          }},
+          {'$group': {
+            '_id': {
+              'vehicle.vehicleType': '$vehicle.vehicleType',
+            },
+            'thisWeek': {'$sum': {'$cond': [
+              {'$gte': ['$entranceDate', lastMondays['1']]}, 1, 0
+            ]}},
+            'lastWeek': {'$sum': {'$cond': [
+              {'$lt': ['$entranceDate', lastMondays['1']]}, {'$cond': [
+                {'$gte': ['$entranceDate', lastMondays['2']]}, 1, 0
+              ]}, 0
+            ]}},
+            'evenEarlier': {'$sum': {'$cond': [
+              {'$lt': ['$entranceDate', lastMondays['2']]}, 1, 0
+            ]}},
+            'total': {
+              '$sum': 1
+            }
+          }}
+        ]).toArray();
+        resultIsSurveyNotReady = resultIsSurveyNotReady.map(r => ({
+          'vehicle.vehicleType': r._id['vehicle.vehicleType'],
+          thisWeek: r.thisWeek,
+          lastWeek: r.lastWeek,
+          evenEarlier: r.evenEarlier,
+          total: r.total,
+        }));
+
+        resultZeroSurvey = yield db.collection('vehicles').aggregate([
+          {'$match': {
+            'surveyRounds': 'zero'
+          }},
+          {'$group': {
+            '_id': {
+              'vehicle.vehicleType': '$vehicle.vehicleType',
+            },
+            'thisWeek': {'$sum': {'$cond': [
+              {'$gte': ['$entranceDate', lastMondays['1']]}, 1, 0
+            ]}},
+            'lastWeek': {'$sum': {'$cond': [
+              {'$lt': ['$entranceDate', lastMondays['1']]}, {'$cond': [
+                {'$gte': ['$entranceDate', lastMondays['2']]}, 1, 0
+              ]}, 0
+            ]}},
+            // 'evenEarlier': {'$sum': {'$cond': [
+            //   {'$lt': ['$entranceDate', lastMondays['2']]}, 1, 0
+            // ]}},
+            'total': {
+              '$sum': 1
+            }
+          }}
+        ]).toArray();
+        resultZeroSurvey = resultZeroSurvey.map(r => ({
+          'vehicle.vehicleType': r._id['vehicle.vehicleType'],
+          thisWeek: r.thisWeek,
+          lastWeek: r.lastWeek,
+          // evenEarlier: r.evenEarlier,
+          total: r.total,
+        }));
+
+        resultSurveyReadyOneSurvey = yield db.collection('vehicles').aggregate([
+          {'$match': {
+            'status.firstSurvey.done': false,
+            'status2.isSurveyReady': true,
+            'surveyRounds': 'one',
+          }},
+          {'$group': {
+            '_id': {
+              'vehicle.vehicleType': '$vehicle.vehicleType',
+              'status.firstSurvey.done': '$status.firstSurvey.done'
+            },
+            'thisWeek': {'$sum': {'$cond': [
+              {'$gte': ['$entranceDate', lastMondays['1']]}, 1, 0
+            ]}},
+            'lastWeek': {'$sum': {'$cond': [
+              {'$lt': ['$entranceDate', lastMondays['1']]}, {'$cond': [
+                {'$gte': ['$entranceDate', lastMondays['2']]}, 1, 0
+              ]}, 0
+            ]}},
+            'evenEarlier': {'$sum': {'$cond': [
+              {'$lt': ['$entranceDate', lastMondays['2']]}, 1, 0
+            ]}},
+            'total': {
+              '$sum': 1
+            }
+          }}
+        ]).toArray();
+        resultSurveyReadyOneSurvey = resultSurveyReadyOneSurvey.map(r => ({
+          'vehicle.vehicleType': r._id['vehicle.vehicleType'],
+          'status.firstSurvey.done': r._id['status.firstSurvey.done'],
+          thisWeek: r.thisWeek,
+          lastWeek: r.lastWeek,
+          evenEarlier: r.evenEarlier,
+          total: r.total,
+        }));
+        resultSurveyReadyTwoSurveys = yield db.collection('vehicles').aggregate([
+          {'$match': {
+            'status.secondSurvey.done': false,
+            'status2.isSurveyReady': true,
+            'surveyRounds': 'two',
+          }},
+          {'$group': {
+            '_id': {
+              'vehicle.vehicleType': '$vehicle.vehicleType',
+              'status.firstSurvey.done': '$status.firstSurvey.done',
+              'status.secondSurvey.done': '$status.secondSurvey.done'
+            },
+            'thisWeek': {'$sum': {'$cond': [
+              {'$gte': ['$entranceDate', lastMondays['1']]}, 1, 0
+            ]}},
+            'lastWeek': {'$sum': {'$cond': [
+              {'$lt': ['$entranceDate', lastMondays['1']]}, {'$cond': [
+                {'$gte': ['$entranceDate', lastMondays['2']]}, 1, 0
+              ]}, 0
+            ]}},
+            'evenEarlier': {'$sum': {'$cond': [
+              {'$lt': ['$entranceDate', lastMondays['2']]}, 1, 0
+            ]}},
+            'total': {
+              '$sum': 1
+            }
+          }}
+        ]).toArray();
+        resultSurveyReadyTwoSurveys = resultSurveyReadyTwoSurveys.map(r => ({
+          'vehicle.vehicleType': r._id['vehicle.vehicleType'],
+          'status.firstSurvey.done': r._id['status.firstSurvey.done'],
+          'status.secondSurvey.done': r._id['status.firstSurvey.done'],
+          thisWeek: r.thisWeek,
+          lastWeek: r.lastWeek,
+          evenEarlier: r.evenEarlier,
+          total: r.total,
+        }));
+
+        result = {
+          resultIsSurveyNotReady,
+          resultZeroSurvey,
+          resultSurveyReadyOneSurvey, 
+          resultSurveyReadyTwoSurveys}
+        break;
       case req.query.title === 'surveyIdle2':
         let resultSurveyReadyNonCommercialVehiclesAndMotorcycles = yield db.collection('vehicles').aggregate([
           {'$match': {'$or': [
