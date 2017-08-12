@@ -37,6 +37,23 @@ module.exports = (req, res) => {
         break;
       case req.query.title === 'inputDone':
         const days = req.query.days * 1;
+        const groupObj = {
+          '_id': {
+            'typeId': '$typeId',
+            // 'inputDate': '$inputDate',
+            'isFromDismantling': '$isFromDismantling'
+          },
+          'total': { '$sum': 1 }
+        };
+        const day0 = new Date();
+        for (let i = 9; i >= 0; i--) {
+          const date = getDaysAgoDate(day0, i);
+          groupObj[date] = {'$sum': {'$cond': [
+              {'$eq': ['$inputDate', date]}, 1, 0
+            ]}}
+        };
+        // console.log(groupObj);
+
         let resultInputDone = yield db.collection('inventory').aggregate([
           {'$project': {
             'typeId': 1,
@@ -55,22 +72,27 @@ module.exports = (req, res) => {
             'inputDate': {'$gt': `${getDaysAgoDate(new Date(), days)}`}
           }},
           {
-            '$group': {
-              '_id': {
-                'typeId': '$typeId',
-                'inputDate': '$inputDate',
-                'isFromDismantling': '$isFromDismantling'
-              },
-              'total': { '$sum': 1 }
-            }
+            '$group': groupObj
           }
         ]).toArray();
-        result = resultInputDone.map(r => ({
-          typeId: r._id.typeId,
-          inputDate: r._id.inputDate,
-          isFromDismantling: r._id.isFromDismantling,
-          total: r.total
-        }));
+        result = resultInputDone.reduce((acc, curr) => {
+          console.log(curr);
+          const isFromDismantling = curr._id.isFromDismantling;
+          curr.typeId = curr._id.typeId;
+          delete curr._id;
+          if (isFromDismantling) {
+            acc.isFromDismantling.push(curr);
+          } else {
+            acc.notFromDismantling.push(curr);
+          }
+          return acc;
+        }, {isFromDismantling: [], notFromDismantling: []})
+        // result = resultInputDone.map(r => ({
+        //   typeId: r._id.typeId,
+        //   inputDate: r._id.inputDate,
+        //   isFromDismantling: r._id.isFromDismantling,
+        //   total: r.total
+        // }));
         break;
     }
 
