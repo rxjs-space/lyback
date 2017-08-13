@@ -579,7 +579,7 @@ module.exports = (req, res) => {
           resultVehicleTypezSecondDone: resultVehicleTypezSecondDone.map(mapper)[0]
         };
         break;
-      case req.query.title === 'entranceAndMofcomYesterday':
+      case req.query.title === 'dailyClearYesterday':
         const yesterdayDate = getDaysAgoDate(new Date(), 1);
         let resultEntranceYesterday = yield db.collection('vehicles').aggregate([
           {'$match': {
