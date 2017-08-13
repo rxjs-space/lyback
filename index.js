@@ -2,6 +2,9 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const app = express();
+const server = require('http').Server(app);
+const io = require('socket.io')(server);
+
 const port = process.env.PORT || 3001;
 
 const authenticate = require('./authenticate');
@@ -31,7 +34,12 @@ app.use((req, res, next) => {
   }
 })
 
-app.use(cors());
+const localHostInArr = process.env.LOCAL_HOST ? process.env.LOCAL_HOST : [];
+const origins = ['http://lynx0421.coding.me', 'https://lynx0421.coding.me'].concat(localHostInArr);
+app.use(cors({
+  origin: origins
+}));
+
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(myPassport.initialize());
@@ -41,14 +49,16 @@ app.use('/api', api);
 
 app.use(errorHandler);
 
+require('./sockets').rtcNSFac(io);
+
 dbX.connect().then((db) => {
   // db.close(); // to test for case where db connection is lost
-  app.listen(port, function() {  
+  server.listen(port, function() {  
     console.log('listening on port', port);
   });
 }).catch(err => {
   console.log('db connection failed');
-  app.listen(port, function() {  
+  server.listen(port, function() {  
     console.log('listening on port', port);
   });
 });

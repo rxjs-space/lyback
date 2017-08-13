@@ -3,7 +3,7 @@ const dbX = require('../../db');
 // const getLastSundays = require('../../utils/last-sundays');
 const getLastMondays = require('../../utils/last-mondays');
 const getTenDaysAgo = require('../../utils/ten-days-ago');
-
+const getDaysAgoDate = require('../../utils').getDaysAgoDate;
 // const today = (new Date());
 // const onedayMS = 1000 * 60 * 60 * 24;
 // const tenDaysAgo = (new Date(Date.parse(today) - onedayMS * 10));
@@ -578,6 +578,109 @@ module.exports = (req, res) => {
           resultVehicleTypezFirstDone: resultVehicleTypezFirstDone.map(mapper)[0],
           resultVehicleTypezSecondDone: resultVehicleTypezSecondDone.map(mapper)[0]
         };
+        break;
+      case req.query.title === 'entranceAndMofcomYesterday':
+        const yesterdayDate = getDaysAgoDate(new Date(), 1);
+        let resultEntranceYesterday = yield db.collection('vehicles').aggregate([
+          {'$match': {
+            'entranceDate': {'$eq': yesterdayDate}
+          }},
+          {'$group': {
+            '_id': {
+              'vehicle.vehicleType': '$vehicle.vehicleType',
+              'source': '$source'
+            },
+            'total': {
+              '$sum': 1
+            }
+          }}
+        ]).toArray();
+        resultEntranceYesterday = resultEntranceYesterday.reduce((acc, curr) => {
+          const vt = curr['_id']['vehicle.vehicleType'];
+          const source = curr['_id']['source'];
+          const total = curr['total'];
+          const item = acc.find(i => i['vehicle.vehicleType'] === vt);
+          if (item) {
+            item[source] = total;
+            item[total] += total;
+          } else {
+            acc.push({
+              'vehicle.vehicleType': vt,
+              [source]: total,
+              'total': total
+            })
+          }
+          return acc;
+        }, []);
+
+        let resultEntranceYesterdayMofcom = yield db.collection('vehicles').aggregate([
+          {'$match': {
+            'entranceDate': {'$eq': yesterdayDate},
+            'status.mofcomCertReady.done': false
+          }},
+          {'$group': {
+            '_id': {
+              'status.mofcomEntry.done': '$status.mofcomEntry.done',
+              'status.mofcomCertReady.done': '$status.mofcomCertReady.done'
+            },
+            'total': {
+              '$sum': 1
+            }
+          }}
+        ]).toArray();
+
+        resultEntranceYesterdayMofcom = resultEntranceYesterdayMofcom.reduce((acc, curr) => {
+          const dataEntryDone = curr['_id']['status.mofcomEntry.done'];
+          const certDone = curr['_id']['status.mofcomCertReady.done'];
+          switch (true) {
+            case true:
+              acc.total += curr.total;
+            case !dataEntryDone:
+              acc.noDataEntry = curr.total; break;
+            case !certDone:
+              acc.onlyDataEntry = curr.total; break;
+            default:
+              acc.certDone = curr.total;
+          }
+          return acc
+        }, {
+          noDataEntry: 0,
+          onlyDataEntryDone: 0,
+          certDone: 0,
+          total: 0
+        });
+
+        let resultEntranceYesterdayDismantlingReadiness = yield db.collection('vehicles').aggregate([
+          {'$match': {
+            'entranceDate': {'$eq': yesterdayDate},
+          }},
+          {'$group': {
+            '_id': {
+              'status2.isDismantlingReady': '$status2.isDismantlingReady',
+            },
+            'total': {
+              '$sum': 1
+            }
+          }}
+        ]).toArray();
+        resultEntranceYesterdayDismantlingReadiness = resultEntranceYesterdayDismantlingReadiness.reduce((acc, curr) => {
+          const isDismantlingReady = curr['_id']['status2.isDismantlingReady'];
+          const total = curr['total'];
+          acc.total += total;
+          if (isDismantlingReady) {
+            acc.ready = total;
+          } else {
+            acc.notReady = total;
+          }
+          return acc;
+        }, {
+          ready: 0, notReady: 0, total: 0
+        });
+        result = {
+          resultEntranceYesterday,
+          resultEntranceYesterdayMofcom,
+          resultEntranceYesterdayDismantlingReadiness
+        }
         break;
       default:
         result = {ok: true};
