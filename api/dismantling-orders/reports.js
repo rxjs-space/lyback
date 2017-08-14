@@ -152,26 +152,26 @@ module.exports = (req, res) => {
             yesterday.getUTCFullYear(),
             yesterday.getUTCMonth(),
             yesterday.getUTCDate(),
-            8
+            16
           ))).toISOString();
           endISOString = (new Date(Date.UTC(
             today.getUTCFullYear(),
             today.getUTCMonth(),
             today.getUTCDate(),
-            8
+            16
           ))).toISOString();
         } else {
           startISOString = (new Date(Date.UTC(
             theDayBeforeYesterday.getUTCFullYear(),
             theDayBeforeYesterday.getUTCMonth(),
             theDayBeforeYesterday.getUTCDate(),
-            8
+            16
           ))).toISOString();
           endISOString = (new Date(Date.UTC(
             yesterday.getUTCFullYear(),
             yesterday.getUTCMonth(),
             yesterday.getUTCDate(),
-            8
+            16
           ))).toISOString();
         }
         console.log(startISOString, endISOString);

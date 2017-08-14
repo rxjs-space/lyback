@@ -246,6 +246,9 @@ router.get('/', (req, res) => {
         dbQuery['vehicle.useCharacter'] = {$ne: 'uc006'}
         break;
     }
+    // if (dbQuery['status2.dismantlingOrderId']) {
+    //   dbQuery['status2.dismantlingOrderId'] = JSON.parse(dbQuery['status2.dismantlingOrderId']);
+    // }
 
     if (dbQuery['ncnm']) { // 'not commercial' + 'motorcycle'
       const dbQueryCopy = Object.assign({}, dbQuery);
@@ -259,7 +262,7 @@ router.get('/', (req, res) => {
               'vehicle.vehicleType': {'$nin': vehicleTypeIdsForMotocycle},              
               'vehicle.useCharacter': {'$eq': 'uc006'},
             }, dbQueryCopy),
-        ]        
+        ]
       }
     }
     // deal with vehicleType === 'z', that is not '3' (i.e, not motorbike)
