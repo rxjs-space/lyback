@@ -598,20 +598,29 @@ module.exports = (req, res) => {
         resultEntranceYesterday = resultEntranceYesterday.reduce((acc, curr) => {
           const vt = curr['_id']['vehicle.vehicleType'];
           const source = curr['_id']['source'];
-          const total = curr['total'];
-          const item = acc.find(i => i['vehicle.vehicleType'] === vt);
+          const subTotal = curr['total'];
+          const item = acc.find(i => i['vehicleType'] === vt);
+          const totalItem = acc.find(i => i['vehicleType'] === 'total');
+          totalItem[source] += subTotal;
+          totalItem['total'] += subTotal;
+
           if (item) {
-            item[source] = total;
-            item[total] += total;
+            item[source] = subTotal;
+            item['total'] += subTotal;
           } else {
             acc.push({
-              'vehicle.vehicleType': vt,
-              [source]: total,
-              'total': total
+              'vehicleType': vt,
+              [source]: subTotal,
+              'total': subTotal
             })
           }
           return acc;
-        }, []);
+        }, [{
+          vehicleType: 'total',
+          vs1: 0,
+          vs2: 0,
+          total: 0
+        }]);
 
         let resultEntranceYesterdayMofcom = yield db.collection('vehicles').aggregate([
           {'$match': {
