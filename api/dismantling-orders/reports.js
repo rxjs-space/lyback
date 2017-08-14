@@ -146,35 +146,37 @@ module.exports = (req, res) => {
         // over 16	UTCDate -1/UCTH8 ~UTCDate/UTCH8
         // below 16	UTCDate -2/UCTH8 ~UTCDate -1 /UTCH8
 
-        let startISOString, endISOString;
-        if (uHours >= 16) {
+        let startISOString, endISOString, orderDateWanted;
+        if (uHours >= 16) { // UTC 16 o'clock is 0 o'clock for beijing
           startISOString = (new Date(Date.UTC(
             yesterday.getUTCFullYear(),
             yesterday.getUTCMonth(),
             yesterday.getUTCDate(),
-            16
+            8 // UTC 8 o'clock is 16 o'clock for beijing
           ))).toISOString();
           endISOString = (new Date(Date.UTC(
             today.getUTCFullYear(),
             today.getUTCMonth(),
             today.getUTCDate(),
-            16
+            8
           ))).toISOString();
         } else {
           startISOString = (new Date(Date.UTC(
             theDayBeforeYesterday.getUTCFullYear(),
             theDayBeforeYesterday.getUTCMonth(),
             theDayBeforeYesterday.getUTCDate(),
-            16
+            8
           ))).toISOString();
           endISOString = (new Date(Date.UTC(
             yesterday.getUTCFullYear(),
             yesterday.getUTCMonth(),
             yesterday.getUTCDate(),
-            16
+            8
           ))).toISOString();
         }
-        console.log(startISOString, endISOString);
+        orderDateWanted = startISOString.substring(0, 10);
+
+        console.log(startISOString, endISOString, orderDateWanted);
         let resultVehicleIsDismantlingReadyWithDismantlingOrder = yield db.collection('vehicles').aggregate([
           {'$match': {
             '$and': [
@@ -207,6 +209,7 @@ module.exports = (req, res) => {
             existingItem['total'] += subTotal;
           } else {
             acc.push({
+              startISOString,
               vehicleType,
               [otherKeyName]: subTotal,
               total: subTotal
@@ -215,15 +218,44 @@ module.exports = (req, res) => {
           totalItem[otherKeyName] += subTotal;
           totalItem['total'] += subTotal;
           return acc;
-        }, [{vehicleType: 'total', hasDismantlingOrder: 0, noDismantlingOrder: 0, total: 0}]);
+        }, [{startISOString, vehicleType: 'total', hasDismantlingOrder: 0, noDismantlingOrder: 0, total: 0}]);
         
-        
-        // resultVehicleIsDismantlingReadyWithDismantlingOrder.map(r => ({
-        //   vehicleType: r['_id']['vehicle.vehicleType'],
-        //   hasDismantlingOrder: r['_id']['hasDismantlingOrder'],
-        //   total: r['total']
-        // }))
-        result = {resultVehicleIsDismantlingReadyWithDismantlingOrder}
+        let resultDismantlingOrdersPlacedTheDayBeforeYesterday = yield db.collection('dismantlingOrders').aggregate([
+          {'$match': {
+            'orderDate': orderDateWanted,
+            'orderType': 'dot1'
+          }},
+          {'$project': {
+            'started': {'$ne': ['$startedAt', '']},
+            'completed': {'$ne': ['$completedAt', '']},
+          }},
+          {'$group': {
+            '_id': {
+              'started': '$started',
+              'completed': '$completed'
+            },
+            'total': {'$sum': 1}
+          }}
+        ]).toArray();
+        resultDismantlingOrdersPlacedTheDayBeforeYesterday = resultDismantlingOrdersPlacedTheDayBeforeYesterday.reduce((acc, curr) => {
+          const started = curr['_id']['started'];
+          const completed = curr['_id']['completed'];
+          const subTotal = curr['total'];
+          acc.total += subTotal;
+          switch (true) {
+            case !started:
+              acc.notStarted += subTotal; break;
+            case completed:
+              acc.completed += subTotal; break;
+            default:
+              acc.startedNotCompleted += subTotal; break;
+          }
+          return acc;
+        }, {
+          orderDate: orderDateWanted, 
+          notStarted: 0, startedNotCompleted: 0, completed: 0, total: 0
+        });
+        result = {resultVehicleIsDismantlingReadyWithDismantlingOrder, resultDismantlingOrdersPlacedTheDayBeforeYesterday}
         break;
     }
     res.json(result);
