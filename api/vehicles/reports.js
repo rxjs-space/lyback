@@ -616,6 +616,7 @@ module.exports = (req, res) => {
           }
           return acc;
         }, [{
+          entranceDate: yesterdayDate,
           vehicleType: 'total',
           vs1: 0,
           vs2: 0,
