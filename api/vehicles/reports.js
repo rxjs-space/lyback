@@ -57,9 +57,10 @@ module.exports = (req, res) => {
         break;
       case req.query.title === 'entrance':
         result = {lastTenDays: [], lastFiveWeeks: []}
+        const tenDaysAgoDate = getDaysAgoDate(new Date(), 10);
         const resultLatest10Days = yield db.collection('vehicles').aggregate([
           {'$match': {
-            'entranceDate': {'$gt': getTenDaysAgo()}
+            'entranceDate': {'$gt': tenDaysAgoDate}
           }},
           {'$group': {
             '_id': {
@@ -642,13 +643,12 @@ module.exports = (req, res) => {
         resultEntranceYesterdayMofcom = resultEntranceYesterdayMofcom.reduce((acc, curr) => {
           const dataEntryDone = curr['_id']['status.mofcomEntry.done'];
           const certDone = curr['_id']['status.mofcomCertReady.done'];
+          acc.total += curr.total;
           switch (true) {
-            case true:
-              acc.total += curr.total;
             case !dataEntryDone:
               acc.noDataEntry = curr.total; break;
             case !certDone:
-              acc.onlyDataEntry = curr.total; break;
+              acc.onlyDataEntryDone = curr.total; break;
             default:
               acc.certDone = curr.total;
           }
@@ -690,6 +690,33 @@ module.exports = (req, res) => {
           resultEntranceYesterday,
           resultEntranceYesterdayMofcom,
           resultEntranceYesterdayDismantlingReadiness
+        }
+        break;
+      case req.query.title === 'currentSate':
+        let resultCurrentStateByDismantling = yield db.collection('vehicles').aggregate([
+          {'$match': {
+            'status.dismantled.done': false
+          }},
+          {'$project': {
+            'vehicle.vehicleType': 1,
+            'status2.isDismantlingReady': 1,
+            'hasDismantlingOrder': {
+              '$ne': ['$status2.dismantlingOrderId', '']
+            }
+          }},
+          {'$group': {
+            '_id': {
+              'vehicle.vehicleType': '$vehicle.vehicleType',
+              'status2.isDismantlingReady': '$status2.isDismantlingReady',
+              'hasDismantlingOrder': '$hasDismantlingOrder'
+            },
+            'total': {
+              '$sum': 1
+            }
+          }}
+        ]).toArray();
+        result ={
+          resultCurrentStateByDismantling
         }
         break;
       default:
