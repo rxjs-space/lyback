@@ -303,24 +303,32 @@ router.get('/', (req, res) => {
 router.get('/one', (req, res) => {
   // example query 
   // /api/vehicles/one?vin=asdfa&returnIDOnly=true
-  if (!req.query.vin) {
+  if (!req.query.vin && !req.query.batchId) {
     return res.status(400).json({
       message: "insufficient parameters."
     })
   }
   co(function*() {
     const db = yield dbX.dbPromise;
-    const docs = yield db.collection('vehicles').find({vin: req.query.vin}/*, {
-      '_id': 0,
-      'createdAt': 0,
-      'createdBy': 0,
-      'modifiedAt': 0,
-      'modifiedBy': 0
-    }*/).toArray();
-    if (!docs.length) {return res.status(400).json({
-      message: `no vehicle whose vin is ${req.query.vin}`
-    })}
-    const vehicle = docs[0];
+    let vehicle;
+    switch (true) {
+      case !!req.query.vin:
+        const docs = yield db.collection('vehicles').find({vin: req.query.vin}).toArray();
+        if (!docs.length) {return res.status(400).json({
+          message: `no vehicle whose vin is ${req.query.vin}`
+        })}
+        vehicle = docs[0];
+        break;
+      case !!req.query.batchId:
+        vehicle = yield db.collection('vehicles').findOne({batchId: req.query.batchId});
+        if (!vehicle) {return res.status(400).json({
+          message: `no vehicle whose batchId is ${req.query.batchId}`
+        })}
+        break;
+    }
+
+
+    // const vehicle = docs[0];
     if (req.query.returnIDOnly && JSON.parse(req.query.returnIDOnly)) {
       return res.json({
         _id: vehicle._id

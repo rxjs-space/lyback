@@ -29,7 +29,8 @@
         yield aclInstance.allow('admin', '/api/inventory/reports', '*');
         yield aclInstance.allow('operationOperator', '/api/inventory', ['get']);
         yield aclInstance.allow('operationOperator', '/api/inventory/reports', ['get']);
-
+        yield aclInstance.allow('admin', '/api/batches', '*');
+        yield aclInstance.allow('operationOperator', '/api/batches', ['get']);
 ```
 
 
@@ -75,3 +76,5 @@ resources:
 /api/brands post get
 
 /api/stats get
+
+/api/batches get

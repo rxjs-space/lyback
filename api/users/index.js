@@ -75,6 +75,7 @@ router.get('/one', (req, res) => {
   // res.send('ok');
 })
 
+/* return staffs of the facility which current user belongs to */
 router.get('/staffs', (req, res) => {
   co(function*() {
     const db = yield dbX.dbPromise;

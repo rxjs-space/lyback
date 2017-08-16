@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const bcrypt = require('bcrypt');
+// const bcrypt = require('bcrypt');
 const jwt = require("jwt-simple"); 
 const co = require('co');
 const myAcl = require('../../my-acl');
