@@ -1,6 +1,6 @@
 const MongoClient = require('mongodb').MongoClient;
 const co = require('co');
-const dbUrl = 'mongodb://timliu:2858880@ds161960.mlab.com:61960/longyundb';
+const dbUrl = `mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_URL}`;
 let db;
 
 module.exports = {
