@@ -359,6 +359,11 @@ router.patch('/one', (req, res) => {
           vtbmymId,
           typeId: item.typeId,
           inputDate: item.inputDate,
+          isInStock: true,
+          isReadyForSale: true,
+          outputTo: '',
+          outputDate: '',
+          outputRef: '',
           createdAt: patchesToInsert.createdAt,
           createdBy: patchesToInsert.createdBy
         };

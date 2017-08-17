@@ -61,6 +61,15 @@ myEmitter.emit('error', new Error('whoops!'));
 
 passport attach userInfo to req.user
 
+## db console
+mongo ds161960.mlab.com:61960/longyundb -u <dbuser> -p <dbpassword>
 
 ## db backup
 mongodump --host ds161960.mlab.com -d longyundb --port 61960 --username timliu --password 2858880 --excludeCollectionsWithPrefix acl
+
+
+
+mongodump --host ds161960.mlab.com -d longyundb --port 61960 --username timliu --password 2858880 --out dump-20170817-0915
+
+
+mongorestore --host ds054289.mlab.com -d longyundb --port 54289 --username timliu --password 2858880 dump-20170817-0915/

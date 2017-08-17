@@ -94,6 +94,35 @@ module.exports = (req, res) => {
         //   total: r.total
         // }));
         break;
+      case req.query.title === 'currentState':
+        console.log('working reports');
+        let resultCurrentState = yield db.collection('inventory').aggregate([
+          {'$lookup': {
+            from: 'vtbmym',
+            localField: "vtbmymId",
+            foreignField: "_id",
+            as: "vtbmym"
+          }},
+          {'$unwind': '$vtbmym'},
+          // {'$match': {'vin': 'LB3FA63J92H016755'}},
+          // {'$group': {
+          //   '_id': {
+          //     'typeId': '$typeId',
+          //     'vehicleType': '$vehicleType'
+          //   },
+          //   'total': {
+          //     '$sum': 1
+          //   }
+          // }}
+        ]).toArray();
+        result = {
+          resultCurrentState
+        }
+        break;
+      default:
+        result = {
+          'req.query.title': req.query.title,
+        }
     }
 
     res.json(result);

@@ -63,6 +63,7 @@ router.get('/', (req, res) => {
   co(function*() {
     const db = yield dbX.dbPromise;
     const collections = yield db.listCollections().toArray();
+    // console.log(collections);
     // const subCollections = [collections[0], collections[1]]
     yield coForEach(collections, function*(col) {
       const subData = yield db.collection(col.name).find().toArray();
