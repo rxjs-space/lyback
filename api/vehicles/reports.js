@@ -586,6 +586,20 @@ module.exports = (req, res) => {
           {'$match': {
             'entranceDate': {'$eq': yesterdayDate}
           }},
+          {'$project': {
+            'vehicle.vehicleType': 1,
+            'source': 1,
+            'vehicle.batterySlotCount': 1,
+            'batteryMissingCount': {
+              '$size': {
+                '$filter': {
+                    input: '$feesAndDeductions',
+                    as: 'fd',
+                    cond: {$eq: [ '$$fd.part', 'p000' ]}
+                  }
+              }
+            }
+          }},
           {'$group': {
             '_id': {
               'vehicle.vehicleType': '$vehicle.vehicleType',
@@ -593,6 +607,12 @@ module.exports = (req, res) => {
             },
             'total': {
               '$sum': 1
+            },
+            'batterySlotCount': {
+              '$sum': '$vehicle.batterySlotCount'
+            },
+            'batteryMissingCount': {
+              '$sum': '$batteryMissingCount'
             }
           }}
         ]).toArray();
@@ -600,19 +620,29 @@ module.exports = (req, res) => {
           const vt = curr['_id']['vehicle.vehicleType'];
           const source = curr['_id']['source'];
           const subTotal = curr['total'];
+          const subBatterySlotCount = curr['batterySlotCount'];
+          const subBatteryMissingCount = curr['batteryMissingCount'];
+
           const item = acc.find(i => i['vehicleType'] === vt);
+
           const totalItem = acc.find(i => i['vehicleType'] === 'total');
           totalItem[source] += subTotal;
           totalItem['total'] += subTotal;
+          totalItem['batterySlotCount'] += subBatterySlotCount;
+          totalItem['batteryMissingCount'] += subBatteryMissingCount;
 
           if (item) {
             item[source] = subTotal;
             item['total'] += subTotal;
+            item['batterySlotCout'] += subBatterySlotCount;
+            item['batteryMissingCount'] += subBatteryMissingCount;
           } else {
             acc.push({
               'vehicleType': vt,
               [source]: subTotal,
-              'total': subTotal
+              'total': subTotal,
+              'batterySlotCount': subBatterySlotCount,
+              'batteryMissingCount': subBatteryMissingCount
             })
           }
           return acc;
@@ -621,7 +651,9 @@ module.exports = (req, res) => {
           vehicleType: 'total',
           vs1: 0,
           vs2: 0,
-          total: 0
+          total: 0,
+          batterySlotCount: 0,
+          batteryMissingCount: 0
         }]);
 
         let resultEntranceYesterdayMofcom = yield db.collection('vehicles').aggregate([
