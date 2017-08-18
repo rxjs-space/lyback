@@ -281,10 +281,10 @@ router.patch('/one', (req, res) => {
   co(function*() {
     const db = yield dbX.dbPromise;
     // get dismantlingOrderType
-    const currentDismantlingOrderState = yield db.collection('dismantlingOrders').find({
+    const currentDismantlingOrder = yield db.collection('dismantlingOrders').find({
       _id: dismantlingOrderId
     }, {orderType: 1}).toArray();
-    const dismanltingOrderTypeX = currentDismantlingOrderState[0].orderType;
+    const dismanltingOrderTypeX = currentDismantlingOrder[0].orderType;
     // insert patches for dismantling order
     const insertPatchesToDismantlingOrderPatchesResult = 
       yield db.collection('dismantlingOrderPatches').insert(patchesToInsert);
@@ -342,11 +342,11 @@ router.patch('/one', (req, res) => {
       const vtbmymId = dbFindVehicleResult[0]['vtbmym'];
       const dbFindDOResult = yield db.collection('dismantlingOrders').find({_id: dismantlingOrderId}).toArray();
       const dismantlingOrder = dbFindDOResult[0];
-      const items = []; // unwind to 1 item a line, according to productionCount
+      const items = []; // unwind to 1 item a line, according to inventoryInputCount
       patchesForInventoryInput.forEach(patch => {
         const itemIndexInArray = patch.path.split('/')[2];
         const pwpp = dismantlingOrder.partsAndWastesPP[itemIndexInArray];
-        for (i = 1; i <= pwpp.countProduction; i++) {
+        for (i = 1; i <= pwpp.inventoryInputCount; i++) {
           items.push({
             typeId: pwpp.id,
             inputDate: patch.value,
