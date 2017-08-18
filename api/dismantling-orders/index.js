@@ -29,6 +29,9 @@ router.get('/', (req, res) => {
   const searchQuery = req.query;
   const keys = Object.keys(searchQuery);
   // turn string 'true' into boolean true
+  keys.forEach(k => {
+    searchQuery[k] = JSON.parse(searchQuery[k]);
+  })
   if (keys.length) {
     for (const k of keys) {
       if (searchQuery[k] === 'true') {searchQuery[k] = true; }
