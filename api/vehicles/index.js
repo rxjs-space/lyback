@@ -207,6 +207,10 @@ router.get('/', (req, res) => {
 
     const searchQuery = req.query;
     const keys = Object.keys(searchQuery);
+    keys.forEach(k => {
+      searchQuery[k] = JSON.parse(searchQuery[k]);
+    })
+    console.log(searchQuery);
     // turn string 'true' into boolean true
     if (keys.length) {
       for (const k of keys) {
@@ -276,7 +280,7 @@ router.get('/', (req, res) => {
       'id': 1,
       'vin': 1,
       'entranceDate': 1,
-      'isSurveyNecessary': 1,
+      'surveyRounds': 1,
       'vtbmym': 1,
       'estimatedSurveyDateFirst': 1,
       'estimatedSurveyDateSecond': 1,
