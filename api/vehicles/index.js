@@ -294,7 +294,8 @@ router.get('/', (req, res) => {
       'vehicle.conditionOnEntrance': 1,
       'dismantling': 1
     })
-    .sort([['_id', -1]])
+    .sort([['entranceDate', -1], ['createdAt', -1]])
+    // .sort([['vehicle.vehicleType', -1]])
     .toArray();
     res.json(docs);
   }).catch((err) => {
