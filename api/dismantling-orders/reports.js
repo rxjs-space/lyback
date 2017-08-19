@@ -35,8 +35,8 @@ module.exports = (req, res) => {
           }},
           {'$group': {
             '_id': {
-              'vehicle.vehicleType': '$vehicle.vehicleType',
-              'status2.isDismantlingReady':'$status2.isDismantlingReady',
+              'vehicleType': '$vehicle.vehicleType',
+              'isDismantlingReady':'$status2.isDismantlingReady',
             },
             'thisWeek': {'$sum': {'$cond': [
               {'$gt': ['$entranceDate', lastSundays['1']]}, 1, 0
@@ -55,8 +55,8 @@ module.exports = (req, res) => {
 
         resultIdle = resultIdle.map(r => {
           return {
-            'vehicle.vehicleType': r._id['vehicle.vehicleType'],
-            'status2.isDismantlingReady': r._id['status2.isDismantlingReady'],
+            'vehicle.vehicleType': r._id['vehicleType'],
+            'status2.isDismantlingReady': r._id['isDismantlingReady'],
             thisWeek: r.thisWeek,
             lastWeek: r.lastWeek,
             evenEarlier: r.evenEarlier,
@@ -193,14 +193,14 @@ module.exports = (req, res) => {
           }},
           {'$group': {
             '_id': {
-              'vehicle.vehicleType': '$vehicle.vehicleType',
+              'vehicleType': '$vehicle.vehicleType',
               'hasDismantlingOrder': '$hasDismantlingOrder'
             },
             'total': {'$sum': 1}
           }}
         ]).toArray();
         resultVehicleIsDismantlingReadyWithDismantlingOrder = resultVehicleIsDismantlingReadyWithDismantlingOrder.reduce((acc, curr) => {
-          const vehicleType = curr['_id']['vehicle.vehicleType'];
+          const vehicleType = curr['_id']['vehicleType'];
           const otherKeyName = curr['_id']['hasDismantlingOrder'] ? 'hasDismantlingOrder' : 'noDismantlingOrder';
           const subTotal = curr['total']
           const existingItem = acc.find(item => item.vehicleType === vehicleType);
