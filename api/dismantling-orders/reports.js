@@ -2,13 +2,15 @@ const co = require('co');
 const dbX = require('../../db');
 const getLastSundays = require('../../utils/last-sundays');
 const getTenDaysAgo = require('../../utils/ten-days-ago');
+const getDaysAgoDate = require('../../utils').getDaysAgoDate;
+const calculateBeijingDateShort = require('../../utils').calculateBeijingDateShort;
 
 const startDay = (new Date());
 const onedayMS = 1000 * 60 * 60 * 24;
 const nineDaysAgo = (new Date(Date.parse(startDay) - onedayMS * 9));
 const nineDaysAgoDate = nineDaysAgo.toISOString().slice(0, 10);
-// console.log(nineDaysAgoDate);
-
+const tenDaysAgo = getDaysAgoDate(new Date(), 10);
+console.log(tenDaysAgo);
 module.exports = (req, res) => {
   let result;
   const lastSundays = getLastSundays();
@@ -130,10 +132,46 @@ module.exports = (req, res) => {
           completedDate: r._id.completedDate,
           total: r.total
         }));
+        let resultCompletedLastTenDays2 = yield db.collection('dismantlingOrders').aggregate([
+          {'$match': {
+            'completedAt': {'$gte': `${tenDaysAgo}T16:00:00.000Z`}
+          }},
+          {'$group': {
+            '_id': {
+              'vehicleType': '$vehicleType',
+              'orderType': '$orderType',
+              'completedAt': '$completedAt'
+            },
+            'total': {'$sum': 1}
+          }}
+        ]).toArray();
+
+        resultCompletedLastTenDays2 = resultCompletedLastTenDays2.map(r => ({
+          vehicleType: r._id.vehicleType,
+          orderType: r._id.orderType,
+          completedDate: calculateBeijingDateShort(r._id.completedAt),
+          total: r.total
+        }));
+        // by now, the result is grouped by long date (complatedAt), need to group them with short date
+        resultCompletedLastTenDays2 = resultCompletedLastTenDays2.reduce((acc, curr) => {
+          const existingItem = acc.find(item => 
+            (item.vehicleType === curr.vehicleType) &&
+            (item.orderType === curr.orderType) &&
+            (item.completedDate === curr.completedDate)
+          );
+          if (existingItem) {
+            existingItem.total += curr.total;
+          } else {
+            acc.push(curr);
+          }
+          return acc;
+        }, [])
+
         result = {
           idle: resultIdle,
           progressing: resultProgressing,
-          completed: resultCompletedLastTenDays
+          // completed: resultCompletedLastTenDays,
+          completed: resultCompletedLastTenDays2
         };
         break;
       case 'dailyClearYesterday':
