@@ -17,6 +17,8 @@ const updatePrices = (data, req, res) => {
   switch (group) {
     case 'pw':
     case 'vt':
+    case 'brand':
+    case 'age':
       // patches: [ { op: 'replace', path: '/p002/number', value: 1 } ]
       
       co(function*() {
@@ -103,6 +105,8 @@ router.get('/', (req, res) => {
     switch (group) {
       case 'pw':
       case 'vt':
+      case 'brand':
+      case 'age':
         result = yield db.collection('prices').find({group}, {
           _id: 0,
           group: 0,
