@@ -10,7 +10,7 @@ const onedayMS = 1000 * 60 * 60 * 24;
 const nineDaysAgo = (new Date(Date.parse(startDay) - onedayMS * 9));
 const nineDaysAgoDate = nineDaysAgo.toISOString().slice(0, 10);
 const tenDaysAgo = getDaysAgoDate(new Date(), 10);
-console.log(tenDaysAgo);
+// console.log(tenDaysAgo);
 module.exports = (req, res) => {
   let result;
   const lastSundays = getLastSundays();
