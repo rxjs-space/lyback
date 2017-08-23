@@ -24,7 +24,10 @@ module.exports = (req, res) => {
     switch (true) {
       case req.query.title === 'mofcom':
         let resultMofcomIdle = yield db.collection('vehicles').aggregate([
-          {$match: {'status.mofcomCertReady.done': false}},
+          {$match: {
+            'status.mofcomCertReady.done': false,
+            'entranceStatus': 'est01'
+          }},
           {$group: {
             _id: {
               'vehicleType': '$vehicle.vehicleType',
