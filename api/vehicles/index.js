@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const co = require('co');
 const toMongodb = require('jsonpatch-to-mongodb');
+const ObjectID = require('mongodb').ObjectID;
 
 const strContains = require('../../utils').strContains;
 const dbX = require('../../db');
@@ -277,7 +278,6 @@ router.get('/', (req, res) => {
     console.log(dbQuery);
 
     const docs = yield db.collection('vehicles').find(dbQuery, {
-      'id': 1,
       'vin': 1,
       'facility': 1,
       'entranceDate': 1,
@@ -401,8 +401,9 @@ router.patch('/survey', (req, res) => {
 })
 
 router.patch('/one', (req, res) => {
-  const vin = req.query.vin;
-  if (!vin) {
+  const vehicleId = req.query.vehicleId;
+  const vin = req.query.vin; // shall delete this from query and replace patches.vin with patches.vehicleId
+  if (!vehicleId) {
     return res.status(400).json({
       message: "insufficient parameters."
     })
@@ -425,6 +426,7 @@ router.patch('/one', (req, res) => {
     patches.createdAt = patchedAt;
     patches.createdBy = req.user._id;
     patches.vin = vin;
+    patches.vehicleId = vehicleId;
 
     const vtbmymPatch = patches.patches.find(p => p.path.indexOf('vtbmym') > -1);
     if (vtbmymPatch && vtbmymPatch.value === 'new') {
@@ -438,7 +440,7 @@ router.patch('/one', (req, res) => {
     console.log(patchesToApply);
     const patchResult = yield db.collection('vehiclePatches').insert(patches);
     const updateResult = yield db.collection('vehicles').updateOne(
-      {vin},
+      {_id: new ObjectID(vehicleId)},
       patchesToApply
     );
     res.json(updateResult);
