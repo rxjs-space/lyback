@@ -58,6 +58,20 @@ module.exports = (req, res) => {
       case req.query.title === 'entrance':
         result = {lastTenDays: [], lastFiveWeeks: []}
         const tenDaysAgoDate = getDaysAgoDate(new Date(), 10);
+        const resultOnTheWayAndPaperWorkNotSubmitted = yield db.collection('vehicles').aggregate([
+          {'$match': {
+            'entranceStatus': {'$ne': 'est01'}
+          }},
+          {'$group': {
+            '_id': {'entranceStatus': '$entranceStatus'},
+            'total': {'$sum': 1}
+          }}
+        ]).toArray();
+        console.log(resultOnTheWayAndPaperWorkNotSubmitted);
+        result['onTheWayAndPaperWorkNotSubmitted'] = resultOnTheWayAndPaperWorkNotSubmitted.map(r => ({
+          entranceStatus: r['_id']['entranceStatus'],
+          total: r['total']
+        }));
         const resultLatest10Days = yield db.collection('vehicles').aggregate([
           {'$match': {
             'entranceDate': {'$gt': tenDaysAgoDate}

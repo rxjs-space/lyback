@@ -280,6 +280,7 @@ router.get('/', (req, res) => {
     const docs = yield db.collection('vehicles').find(dbQuery, {
       'vin': 1,
       'facility': 1,
+      'entranceStatus': 1,
       'entranceDate': 1,
       'surveyRounds': 1,
       'vtbmym': 1,
