@@ -272,7 +272,8 @@ module.exports = (req, res) => {
         const yesterdayDate = getDaysAgoDate(new Date(), 1);
         let resultEntranceYesterday = yield db.collection('vehicles').aggregate([
           {'$match': {
-            'entranceDate': {'$eq': yesterdayDate}
+            'entranceDate': {'$eq': yesterdayDate},
+            'entranceStatus': 'est01'
           }},
           {'$project': {
             'vehicle.vehicleType': 1,
@@ -347,7 +348,8 @@ module.exports = (req, res) => {
         let resultEntranceYesterdayMofcom = yield db.collection('vehicles').aggregate([
           {'$match': {
             'entranceDate': {'$eq': yesterdayDate},
-            'status.mofcomCertReady.done': false
+            'status.mofcomCertReady.done': false,
+            'entranceStatus': 'est01'
           }},
           {'$group': {
             '_id': {
@@ -383,6 +385,7 @@ module.exports = (req, res) => {
         let resultEntranceYesterdayDismantlingReadiness = yield db.collection('vehicles').aggregate([
           {'$match': {
             'entranceDate': {'$eq': yesterdayDate},
+            'entranceStatus': 'est01'
           }},
           {'$group': {
             '_id': {
@@ -406,10 +409,29 @@ module.exports = (req, res) => {
         }, {
           ready: 0, notReady: 0, total: 0
         });
+        let resultEntranceYesterdayOnTheWayOrPaperWorkNotSubmitted = yield db.collection('vehicles').aggregate([
+          {'$match': {
+            'entranceDate': {'$eq': yesterdayDate},
+            'entranceStatus': {'$ne': 'est01'}
+          }},
+          {'$group': {
+            '_id': {
+              'entranceStatus': '$entranceStatus',
+            },
+            'total': {
+              '$sum': 1
+            }
+          }}
+        ]).toArray();
+        resultEntranceYesterdayOnTheWayOrPaperWorkNotSubmitted = resultEntranceYesterdayOnTheWayOrPaperWorkNotSubmitted.reduce((acc, curr) => {
+          acc[curr['_id']['entranceStatus']] = curr['total'];
+          return acc;
+        }, {})
         result = {
           resultEntranceYesterday,
           resultEntranceYesterdayMofcom,
-          resultEntranceYesterdayDismantlingReadiness
+          resultEntranceYesterdayDismantlingReadiness,
+          resultEntranceYesterdayOnTheWayOrPaperWorkNotSubmitted
         }
         break;
       case req.query.title === 'currentSate':
