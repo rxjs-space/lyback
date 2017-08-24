@@ -15,6 +15,6 @@ exports.getDaysAgoDate = (startDay, days) => {
 exports.calculateBeijingDateShort = (ISODateString) => {
   const thatDate = new Date(ISODateString);
   const uHours = thatDate.getUTCHours();
-  const beijingDate = uHours >= 16 ? new Date(Date.parse(startDay) + onedayMS) : thatDate;
+  const beijingDate = uHours >= 16 ? new Date(Date.parse(thatDate) + onedayMS) : thatDate;
   return beijingDate.toISOString().slice(0, 10);
 }
