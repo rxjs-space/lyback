@@ -58,6 +58,8 @@ const updatePrices = (data, req, res) => {
   }
 }
 
+
+
 router.post('/', function(req, res) {
   if (!req.body) {return res.status(400).json({
     message: 'No price details provided.'
@@ -97,23 +99,26 @@ router.post('/', function(req, res) {
 
 });
 
+
+
 router.get('/', (req, res) => {
   co(function*() {
     const db = yield dbX.dbPromise;
     const group = req.query['group'];
     let result;
-    switch (group) {
-      case 'pw':
-      case 'vt':
-      case 'brand':
-      case 'age':
-        result = yield db.collection('prices').find({group}, {
-          _id: 0,
-          group: 0,
-          createdAt: 0,
-          createdBy: 0
-        }).toArray();
-        break;
+    if (group) {
+      result = yield db.collection('prices').find({group}, {
+        _id: 0,
+        group: 0,
+        createdAt: 0,
+        createdBy: 0
+      }).toArray();
+    } else {
+      result = yield db.collection('prices').find({}, {
+        _id: 0,
+        createdAt: 0,
+        createdBy: 0
+      }).toArray();
     }
     res.json(result);
   }).catch(error => {
