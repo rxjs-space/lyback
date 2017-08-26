@@ -437,13 +437,42 @@ router.patch('/one', (req, res) => {
 
 
     const patchesToApply = toMongodb(patches.patches);
-    // console.log(patches.patches);
-    console.log(patchesToApply);
+    console.log('patchesToApply', patchesToApply);
+
+    let patchesToApplyFollowingUp, toApplyPullPatches; // in case $unset op for array elements, need following up $pull ops
+    if (Object.keys(patchesToApply).indexOf('$unset') > -1) {
+      toApplyPullPatches = true;
+      patchesToApplyFollowingUp = {'$pull': {}};
+      const pullKeys = [];
+      Object.keys(patchesToApply['$unset']).forEach(k => {
+        const routes = k.split('.');
+        const pullKey = routes.slice(0, routes.length - 1);
+        if (pullKeys.indexOf(pullKey) === -1) {
+          pullKeys.push(pullKey);
+        }
+      })
+      pullKeys.reduce((acc, curr) => {
+        acc['$pull'][curr] = null;
+        return acc;
+      }, patchesToApplyFollowingUp)
+    }
+    console.log('patchesToApplyFollowingUp', patchesToApplyFollowingUp);
+
+    // {$pull : {"interests" : null}}
     const patchResult = yield db.collection('vehiclePatches').insert(patches);
     const updateResult = yield db.collection('vehicles').updateOne(
       {_id: new ObjectID(vehicleId)},
       patchesToApply
     );
+
+    if (toApplyPullPatches) {
+      console.log('pulling null elements...')
+      const pullResult = yield db.collection('vehicles').updateOne(
+        {_id: new ObjectID(vehicleId)},
+        patchesToApplyFollowingUp
+      )
+    }
+
     res.json(updateResult);
     // res.json({
     //   message: 'ok'

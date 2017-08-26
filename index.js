@@ -49,7 +49,8 @@ app.use('/api', api);
 
 app.use(errorHandler);
 
-require('./sockets').rtcNSFac(io);
+// require('./sockets').rtcNS(io);
+require('./sockets').collectionVersionsNS(io);
 
 dbX.connect().then((db) => {
   // db.close(); // to test for case where db connection is lost
