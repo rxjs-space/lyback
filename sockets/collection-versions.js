@@ -63,12 +63,12 @@ module.exports = (io) => {
         const hasUpdates = Object.keys(clientCollectionUpdates).length;
         if (hasUpdates) {
           const collectionsToUpdate = Object.keys(clientCollectionUpdates);
-          if (collectionsToUpdate.indexOf('gd') > -1) {
-            clientCollectionUpdates['gd']['data'] = yield db.collection('prices').find({}).toArray();
-          }
-          // if (collectionsToUpdate.indexOf('brands') > -1) {
-          //   clientCollectionUpdates['brands']['data'] = yield db.collection('brands').find({}).toArray();
+          // if (collectionsToUpdate.indexOf('gd') > -1) {
+          //   clientCollectionUpdates['gd']['data'] = yield db.collection('prices').find({}).toArray();
           // }
+          if (collectionsToUpdate.indexOf('brands') > -1) {
+            clientCollectionUpdates['brands']['data'] = yield db.collection('brands').find({}).toArray();
+          }
           
           // yield coForEach(Object.keys(clientCollectionUpdates), function*(k) {
           //   console.log('adding to clientCollectionUpdates:', k);
