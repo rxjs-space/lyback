@@ -72,8 +72,8 @@ module.exports = (io) => {
               case 'gd':
               clientCollectionUpdates[k]['data'] = JSON.stringify(yield db.collection('prices').find({}).toArray());
               break;
-            // default:
-            //   clientCollectionUpdates[k]['data'] = JSON.stringify(yield db.collection(k).find({}).toArray());
+            default:
+              clientCollectionUpdates[k]['data'] = JSON.stringify(yield db.collection(k).find({}).toArray());
             }
           });
           
