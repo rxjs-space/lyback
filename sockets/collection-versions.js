@@ -67,10 +67,10 @@ module.exports = (io) => {
             const temp1 = yield db.collection('prices').find({}).toArray();
             clientCollectionUpdates['gd']['data'] = temp1;
           }
-          // if (collectionsToUpdate.indexOf('brands') > -1) {
-          //   const temp2 = yield db.collection('brands').find({}).toArray();
-          //   clientCollectionUpdates['brands']['data'] = temp2;
-          // }
+          if (collectionsToUpdate.indexOf('brands') > -1) {
+            const temp2 = yield db.collection('brands').find({}).toArray();
+            clientCollectionUpdates['brands']['data'] = {name: '中文'};
+          }
           // types, titles, staffs
           
           // heroku not working with following coForEach code, don't know why
