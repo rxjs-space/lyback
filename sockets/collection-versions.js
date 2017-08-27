@@ -63,27 +63,25 @@ module.exports = (io) => {
         const hasUpdates = Object.keys(clientCollectionUpdates).length;
         if (hasUpdates) {
           const collectionsToUpdate = Object.keys(clientCollectionUpdates);
-          if (collectionsToUpdate.indexOf('gd') > -1) {
-            const temp1 = yield db.collection('prices').find({}).toArray();
-            clientCollectionUpdates['gd']['data'] = temp1;
-          }
-          if (collectionsToUpdate.indexOf('brands') > -1) {
-            const temp2 = yield db.collection('brands').find({}).toArray();
-            clientCollectionUpdates['brands']['data'] = {name: 'ok'};
-          }
+
           // types, titles, staffs
           
-          // heroku not working with following coForEach code, don't know why
-          // yield coForEach(Object.keys(clientCollectionUpdates), function*(k) {
-          //   console.log('adding to clientCollectionUpdates:', k);
-          //   switch (k) {
-          //     case 'gd':
-          //     clientCollectionUpdates[k]['data'] = yield db.collection('prices').find({}).toArray();
-          //     break;
-          //   default:
-          //     clientCollectionUpdates[k]['data'] = yield db.collection(k).find({}).toArray();
-          //   }
-          // });
+          yield coForEach(Object.keys(clientCollectionUpdates), function*(k) {
+            console.log('adding to clientCollectionUpdates:', k);
+            switch (k) {
+              case 'gd':
+              clientCollectionUpdates[k] = JSON.stringify({
+                version: clientCollectionUpdates[k]['version'],
+                data: yield db.collection('prices').find({}).toArray()
+              });
+              break;
+            default:
+              clientCollectionUpdates[k] = JSON.stringify({
+                version: clientCollectionUpdates[k]['version'],
+                data: yield db.collection(k).find({}).toArray()
+              });
+            }
+          });
           
           socket.emit('collectionUpdate', clientCollectionUpdates);
         } else {
