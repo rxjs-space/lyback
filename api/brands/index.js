@@ -28,6 +28,14 @@ router.post('/', function(req, res) {
   co(function*() {
     const db = yield dbX.dbPromise;
     const insertResult = yield db.collection('brands').insertMany(newBrands);
+    const updateVersionResult = yield db.collection('versions').updateOne({
+      collection: 'brands'
+    }, {
+      '$set': {version: `${(new Date()).toISOString().substring(0, 10)}:${Math.random()}`}
+    }, {
+      upsert: true
+    });
+
     res.json(insertResult);
   }).catch(error => {
     const errStr = JSON.stringify(error.stack);

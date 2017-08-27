@@ -46,7 +46,20 @@ const updatePrices = (data, req, res) => {
           group, patches, createdAt: opTime, createBy: operator
         });
         const updateResult = yield db.collection('prices').bulkWrite(dbOps, {ordered: true, w: 1});
-        res.json({ok: true, upsertCount: updateResult.nUpserted});
+        const updateVersionResult = yield db.collection('versions').updateOne({
+          collection: 'prices'
+        }, {
+          '$set': {version: `${(new Date()).toISOString().substring(0, 10)}:${Math.random()}`}
+        }, {
+          upsert: true
+        });
+        res.json({ok: true, counts: {
+          // insertedCount: updateResult.insertedCount,
+          // matchedCount: updateResult.matchedCount,
+          modifiedCount: updateResult.modifiedCount,
+          // deletedCount: updateResult.deletedCount,
+          upsertedCount: updateResult.upsertedCount
+        }});
       }).catch(error => {
         return res.status(500).json({
           error: error.stack,
@@ -57,8 +70,6 @@ const updatePrices = (data, req, res) => {
       res.json({ok: true, op: 'nothing'})
   }
 }
-
-
 
 router.post('/', function(req, res) {
   if (!req.body) {return res.status(400).json({
