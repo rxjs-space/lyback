@@ -76,7 +76,6 @@ module.exports = (io) => {
           });
 
           // socket.emit('collectionUpdate', clientCollectionUpdates);
-          socket.send(clientCollectionUpdates);
         } else {
           socket.send({message: 'all collections up-to-date'});          
         }
