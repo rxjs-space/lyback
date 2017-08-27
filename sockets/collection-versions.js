@@ -69,7 +69,7 @@ module.exports = (io) => {
           }
           if (collectionsToUpdate.indexOf('brands') > -1) {
             const temp2 = yield db.collection('brands').find({}).toArray();
-            clientCollectionUpdates['brands']['data'] = {name: '中文'};
+            clientCollectionUpdates['brands']['data'] = {name: 'ok'};
           }
           // types, titles, staffs
           
