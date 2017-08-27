@@ -64,13 +64,12 @@ module.exports = (io) => {
         if (hasUpdates) {
 
           yield coForEach(Object.keys(clientCollectionUpdates), function*(k) {
-            console.log(k);
+            console.log('adding to clientCollectionUpdates:', k);
             switch (k) {
               case 'gd':
               clientCollectionUpdates[k]['data'] = yield db.collection('prices').find({}).toArray();
               break;
             default:
-              console.log('in default', k);
               clientCollectionUpdates[k]['data'] = yield db.collection(k).find({}).toArray();
             }
           });
