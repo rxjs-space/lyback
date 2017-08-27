@@ -62,7 +62,7 @@ module.exports = (io) => {
         }, clientCollectionUpdates);
         const hasUpdates = Object.keys(clientCollectionUpdates).length;
         if (hasUpdates) {
-          socket.send('in if before coForEach');
+          socket.send(clientCollectionUpdates);
           yield coForEach(Object.keys(clientCollectionUpdates), function*(k) {
             console.log('adding to clientCollectionUpdates:', k);
             switch (k) {
