@@ -70,16 +70,10 @@ module.exports = (io) => {
             console.log('adding to clientCollectionUpdates:', k);
             switch (k) {
               case 'gd':
-              clientCollectionUpdates[k] = JSON.stringify({
-                version: clientCollectionUpdates[k]['version'],
-                data: yield db.collection('prices').find({}).toArray()
-              });
+              clientCollectionUpdates[k]['data'] = JSON.stringify(yield db.collection('prices').find({}).toArray());
               break;
             default:
-              clientCollectionUpdates[k] = JSON.stringify({
-                version: clientCollectionUpdates[k]['version'],
-                data: yield db.collection(k).find({}).toArray()
-              });
+              clientCollectionUpdates[k]['data'] = JSON.stringify(yield db.collection(k).find({}).toArray());
             }
           });
           
