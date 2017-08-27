@@ -63,26 +63,26 @@ module.exports = (io) => {
         const hasUpdates = Object.keys(clientCollectionUpdates).length;
         if (hasUpdates) {
           const collectionsToUpdate = Object.keys(clientCollectionUpdates);
-          if (collectionsToUpdate.indexOf('gd') > -1) {
-            const temp1 = yield db.collection('prices').find({}).toArray();
-            clientCollectionUpdates['gd']['data'] = temp1;
-          }
-          if (collectionsToUpdate.indexOf('brands') > -1) {
-            const temp2 = yield db.collection('brands').find({}).toArray();
-            clientCollectionUpdates['brands']['data'] = temp2;
-          }
-          
-          // yield coForEach(Object.keys(clientCollectionUpdates), function*(k) {
-          //   console.log('adding to clientCollectionUpdates:', k);
-          //   switch (k) {
-          //     case 'gd':
-          //     clientCollectionUpdates[k]['data'] = yield db.collection('prices').find({}).toArray();
-          //     break;
-          //   default:
-          //     clientCollectionUpdates[k]['data'] = yield db.collection(k).find({}).toArray();
-          //   }
-          // });
-          // socket.send(clientCollectionUpdates);
+          // if (collectionsToUpdate.indexOf('gd') > -1) {
+          //   const temp1 = yield db.collection('prices').find({}).toArray();
+          //   clientCollectionUpdates['gd']['data'] = temp1;
+          // }
+          // if (collectionsToUpdate.indexOf('brands') > -1) {
+          //   const temp2 = yield db.collection('brands').find({}).toArray();
+          //   clientCollectionUpdates['brands']['data'] = temp2;
+          // }
+          let temp;
+          yield coForEach(Object.keys(clientCollectionUpdates), function*(k) {
+            switch (k) {
+              case 'gd':
+              temp = yield db.collection('prices').find({}).toArray();
+              clientCollectionUpdates[k]['data'] = temp;
+              break;
+            default:
+              temp = yield db.collection('brands').find({}).toArray();
+              clientCollectionUpdates[k]['data'] = temp;
+            }
+          });
           
           socket.emit('collectionUpdate', clientCollectionUpdates);
         } else {
