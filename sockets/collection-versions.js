@@ -62,7 +62,6 @@ module.exports = (io) => {
         }, clientCollectionUpdates);
         const hasUpdates = Object.keys(clientCollectionUpdates).length;
         if (hasUpdates) {
-          socket.send(clientCollectionUpdates);
           yield coForEach(Object.keys(clientCollectionUpdates), function*(k) {
             console.log('adding to clientCollectionUpdates:', k);
             switch (k) {
@@ -73,7 +72,8 @@ module.exports = (io) => {
               clientCollectionUpdates[k]['data'] = yield db.collection(k).find({}).toArray();
             }
           });
-
+          socket.send(clientCollectionUpdates);
+          
           // socket.emit('collectionUpdate', clientCollectionUpdates);
         } else {
           socket.send({message: 'all collections up-to-date'});          
