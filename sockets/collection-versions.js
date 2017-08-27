@@ -62,23 +62,24 @@ module.exports = (io) => {
         }, clientCollectionUpdates);
         const hasUpdates = Object.keys(clientCollectionUpdates).length;
         socket.send('anything');
-        // if (hasUpdates) {
+        if (hasUpdates) {
 
-        //   yield coForEach(Object.keys(clientCollectionUpdates), function*(k) {
-        //     console.log('adding to clientCollectionUpdates:', k);
-        //     switch (k) {
-        //       case 'gd':
-        //       clientCollectionUpdates[k]['data'] = yield db.collection('prices').find({}).toArray();
-        //       break;
-        //     default:
-        //       clientCollectionUpdates[k]['data'] = yield db.collection(k).find({}).toArray();
-        //     }
-        //   });
+          yield coForEach(Object.keys(clientCollectionUpdates), function*(k) {
+            console.log('adding to clientCollectionUpdates:', k);
+            switch (k) {
+              case 'gd':
+              clientCollectionUpdates[k]['data'] = yield db.collection('prices').find({}).toArray();
+              break;
+            default:
+              clientCollectionUpdates[k]['data'] = yield db.collection(k).find({}).toArray();
+            }
+          });
 
-        //   socket.emit('collectionUpdate', clientCollectionUpdates);
-        // } else {
-        //   socket.send({message: 'all collections up-to-date'});          
-        // }
+          // socket.emit('collectionUpdate', clientCollectionUpdates);
+          socket.send(clientCollectionUpdates);
+        } else {
+          socket.send({message: 'all collections up-to-date'});          
+        }
       }).catch(error => {
         socket.emit('error', {
           error: error.stack
