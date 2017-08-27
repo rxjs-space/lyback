@@ -73,7 +73,7 @@ module.exports = (io) => {
               clientCollectionUpdates[k]['data'] = JSON.stringify(yield db.collection('prices').find({}).toArray());
               break;
             default:
-              clientCollectionUpdates[k]['data'] = JSON.stringify(yield db.collection(k).find({}).toArray());
+              clientCollectionUpdates[k]['data'] = JSON.stringify(JSON.stringify(yield db.collection(k).find({}).toArray()));
             }
           });
           
@@ -82,6 +82,7 @@ module.exports = (io) => {
           socket.send({message: 'all collections up-to-date'});          
         }
       }).catch(error => {
+        console.log(error.stack);
         socket.emit('error', {
           error: error.stack
         })
