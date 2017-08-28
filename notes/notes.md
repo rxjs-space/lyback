@@ -62,7 +62,10 @@ myEmitter.emit('error', new Error('whoops!'));
 passport attach userInfo to req.user
 
 ## pitfalls
-socket.io not supporting transfer object with Chinese strings very well (can not work on heroku at least);
+socket.io not supporting transfer object with Chinese strings very well;
+```js
+JSON.parse(JSON.parse(updateHash[k]['data'])) // need two stringifies, otherwise, error at heroku without details
+```
 
 ## db console
 mongo ds161960.mlab.com:61960/longyundb -u <dbuser> -p <dbpassword>

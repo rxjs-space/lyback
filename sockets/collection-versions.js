@@ -70,9 +70,12 @@ module.exports = (io) => {
             console.log('adding to clientCollectionUpdates:', k);
             switch (k) {
               case 'gd':
-              clientCollectionUpdates[k]['data'] = JSON.stringify(yield db.collection('prices').find({}).toArray());
+              clientCollectionUpdates[k]['data'] = JSON.stringify(yield db.collection('prices').find({}, {
+                createdAt: 0, createdBy: 0, modifiedAt: 0, modifiedBy: 0
+              }).toArray());
               break;
             default:
+              // need two stringifies, otherwise, error at heroku without details
               clientCollectionUpdates[k]['data'] = JSON.stringify(JSON.stringify(yield db.collection(k).find({}).toArray()));
             }
           });
