@@ -46,7 +46,7 @@ router.post('/query', (req, res) => {
       
 
       // const findResult = yield db.collection('inventory').find(queryParamsInventory).toArray();
-      const aggregateResult = yield db.collection('inventory').aggregate([
+      let aggregateResult = yield db.collection('inventory').aggregate([
         {'$match': queryParamsInventory},
         {'$lookup': {
           from: "vtbmym",
@@ -59,9 +59,29 @@ router.post('/query', (req, res) => {
           'vin': 0, 'vtbmymId': 0, 'inputDate': 0, 'isInStock': 0, 'outputTo': 0,
           'outputDate': 0, 'outputRef': 0, 'createdAt': 0, 'createdBy': 0,
           'vtbmym_detail._id': 0, 'vtbmym_detail._id': 0, 
+        }}, // after $project, result includes model and month
+        {'$group': {
+          '_id': {
+            'typeId': '$typeId',
+            'isReadyForSale': '$isReadyForSale',
+            'brand': '$vtbmym_detail.brand',
+            'vehicleType': '$vtbmym_detail.vehicleType',
+            'year': '$vtbmym_detail.year'
+          },
+          'total': {'$sum': 1}
         }}
       ]).toArray();
+      aggregateResult = aggregateResult.map(r => ({
+        'typeId': r._id.typeId,
+        'isReadyForSale': r._id.isReadyForSale,
+        'brand': r._id.brand,
+        'vehicleType': r._id.vehicleType,
+        'year': r._id.year,
+        'total': r.total
+      }));
       res.json(aggregateResult);
+
+      // partName, brand, vt, year, isReadyForSale, count
 
     }
   }).catch(error => {

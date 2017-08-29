@@ -76,7 +76,8 @@ module.exports = (io) => {
               break;
             default:
               // need two stringifies, otherwise, error at heroku without details
-              clientCollectionUpdates[k]['data'] = JSON.stringify(JSON.stringify(yield db.collection(k).find({}).toArray()));
+              clientCollectionUpdates[k]['data'] = [{a: 1}];
+              // clientCollectionUpdates[k]['data'] = JSON.stringify(JSON.stringify(yield db.collection(k).find({}).toArray()));
             }
           });
           
