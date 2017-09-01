@@ -19,6 +19,16 @@ router.post('/', function(req, res) {
   })
 });
 
+router.get('/', (req, res) => {
+  co(function*() {
+    const db = yield dbX.dbPromise;
+    const docs = yield db.collection('tt').find({}).toArray();
+    res.send(docs);
+  }).catch((err) => {
+    return res.status(500).json(err.stack);
+  })
+})
+
 router.get('/one', (req, res) => {
   if (!req.query.name) {
     return res.status(400).json({

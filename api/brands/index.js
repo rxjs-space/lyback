@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const jwt = require("jwt-simple"); 
 const co = require('co');
+const ObjectID = require('mongodb').ObjectID;
 const myAcl = require('../../my-acl');
 
 const dbX = require('../../db');
@@ -23,6 +24,13 @@ router.post('/', function(req, res) {
         message: `${bStr} has no valid name property.`
       })
     }
+  })
+
+  const createdAt = (new Date()).toISOString();
+  const createdBy = req.user._id;
+  newBrands.forEach(b => {
+    b.createdAt = createdAt;
+    b.createdBy = createdBy;
   })
 
   co(function*() {
@@ -55,6 +63,36 @@ router.get('/', (req, res) => {
   }).catch(err => {
     return res.status(500).json(err.stack);
   })
+
+})
+
+router.get('/one', (req, res) => {
+
+  if (!req.query.id && !req.query.name) {
+    return res.status(400).json({
+      message: "insufficient parameters."
+    })
+  }
+  // res.json({ok: true});
+  co(function*() {
+    const db = yield dbX.dbPromise;
+    let brand;
+    switch (true) {
+      case !!req.query.id:
+        brand = yield db.collection('brands').findOne({_id: new ObjectID(req.query.id)});
+
+        break;
+      case !!req.query.name:
+        brand = yield db.collection('brands').findOne({name: req.query.name});
+        break;
+    }
+    res.send(brand);
+
+  }).catch((err) => {
+    return res.status(500).json(err.stack);
+  })
+  
+
 
 })
 

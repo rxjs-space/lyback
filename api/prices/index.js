@@ -119,16 +119,18 @@ router.get('/', (req, res) => {
     let result;
     if (group) {
       result = yield db.collection('prices').find({group}, {
-        _id: 0,
         group: 0,
         createdAt: 0,
-        createdBy: 0
+        createdBy: 0,
+        modifiedAt: 0,
+        modifiedBy: 0
       }).toArray();
     } else {
       result = yield db.collection('prices').find({}, {
-        _id: 0,
         createdAt: 0,
-        createdBy: 0
+        createdBy: 0,
+        modifiedAt: 0,
+        modifiedBy: 0
       }).toArray();
     }
     res.json(result);

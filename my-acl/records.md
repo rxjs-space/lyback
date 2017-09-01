@@ -36,7 +36,12 @@
         yield aclInstance.allow('admin', '/api/inventory/query', '*');
         yield aclInstance.allow('operationOperator', '/api/inventory/query', 'post');
 
-
+        yield aclInstance.allow('admin', '/api/brands/one', '*');
+        yield aclInstance.allow('operationOperator', '/api/brands/one', ['get']);
+        yield aclInstance.allow('admin', '/api/versions', '*');
+        yield aclInstance.allow('operationOperator', '/api/versions', 'get');
+        yield aclInstance.allow('admin', '/api/tt', '*');
+        yield aclInstance.allow('operationOperator', '/api/tt', 'get');
 ```
 
 
@@ -75,11 +80,12 @@ resources:
 /api/sales-orders
 /api/sales-orders/one
 
-/api/tt post
+/api/tt post, get
 /api/tt/types patch get
 /api/tt/titles patch get
 
 /api/brands post get
+/api/brands/one get
 
 /api/stats get
 
@@ -88,3 +94,5 @@ resources:
 /api/prices get
 
 /api/inventory/query post
+
+/api/versions get
