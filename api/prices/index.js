@@ -6,7 +6,7 @@ const myAcl = require('../../my-acl');
 
 const dbX = require('../../db');
 
-const updatePrices = (data, req, res) => {
+const upsertPrices = (data, req, res) => {
   const group = data.group;
   const patches = data.patches;
   if (!group || !patches) {return res.status(400).json({
@@ -24,7 +24,7 @@ const updatePrices = (data, req, res) => {
       co(function*() {
         const db = yield dbX.dbPromise;
         const opTime = (new Date()).toISOString();
-        const operator = req.user._id
+        const userId = req.user._id
         const dbOps = patches.map(p => ({
           updateOne: {
             filter: {group, id: p.path.split('/')[1]},
@@ -32,18 +32,18 @@ const updatePrices = (data, req, res) => {
               $set: {
                 number: p.value,
                 modifiedAt: opTime,
-                modifiedBy: operator
+                modifiedBy: userId
               },
               $setOnInsert: {
                 createdAt: opTime,
-                createdBy: operator
+                createdBy: userId
               }
             },
             upsert: true
           }
         }));
         const insertResult = yield db.collection('pricePatches').insert({
-          group, patches, createdAt: opTime, createBy: operator
+          group, patches, createdAt: opTime, createBy: userId
         });
         const updateResult = yield db.collection('prices').bulkWrite(dbOps, {ordered: true, w: 1});
         const updateVersionResult = yield db.collection('versions').updateOne({
@@ -59,7 +59,7 @@ const updatePrices = (data, req, res) => {
           modifiedCount: updateResult.modifiedCount,
           // deletedCount: updateResult.deletedCount,
           upsertedCount: updateResult.upsertedCount
-        }});
+        }, updateResult});
       }).catch(error => {
         return res.status(500).json({
           error: error.stack,
@@ -76,8 +76,8 @@ router.post('/', function(req, res) {
     message: 'No price details provided.'
   })}
   switch (req.query.op) {
-    case 'update':
-      updatePrices(req.body, req, res);
+    case 'upsert':
+      upsertPrices(req.body, req, res);
       // console.log(req.body);
       // res.json({ok: true});
       break;
