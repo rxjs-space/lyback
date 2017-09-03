@@ -1,7 +1,4 @@
-- db connection  
-  mongo ds161960.mlab.com:61960/longyundb -u <dbuser> -p <dbpassword>  
-  mongodb://<dbuser>:<dbpassword>@ds161960.mlab.com:61960/longyundb
-
+20170904 last 36afbc4e8a7d3bbef6523951651fd60d74a0f682
 
 - for async op iterations, like inserting a bunch of docs into a collection
 ```js
