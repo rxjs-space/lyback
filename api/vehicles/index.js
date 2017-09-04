@@ -288,6 +288,7 @@ router.get('/', (req, res) => {
       'vehicle.brand': 1,
       'vehicle.model': 1,
       'vehicle.color': 1,
+      'vehicle.engineNo': 1,
       'vehicle.useCharacter': 1,
       'vehicle.conditionOnEntrance': 1,
       'vehicle.residualValueBeforeFD': 1,
