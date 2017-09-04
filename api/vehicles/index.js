@@ -198,7 +198,6 @@ Error: read ECONNRESET
 })
 
 router.get('/', (req, res) => {
-
   co(function*() {
     const db = yield dbX.dbPromise;
 
@@ -255,28 +254,24 @@ router.get('/', (req, res) => {
     //   dbQuery['status2.dismantlingOrderId'] = JSON.parse(dbQuery['status2.dismantlingOrderId']);
     // }
 
-    if (dbQuery['ncnm']) { // 'not commercial' + 'motorcycle'
-      const dbQueryCopy = Object.assign({}, dbQuery);
-      delete dbQueryCopy['ncnm']
-      dbQuery = {
-        '$or': [
-            Object.assign({
-              'vehicle.vehicleType': {'$in': vehicleTypeIdsForMotocycle}
-            }, dbQueryCopy),
-            Object.assign({
-              'vehicle.vehicleType': {'$nin': vehicleTypeIdsForMotocycle},              
-              'vehicle.useCharacter': {'$eq': 'uc006'},
-            }, dbQueryCopy),
-        ]
-      }
-    }
-    // deal with vehicleType === 'z', that is not '3' (i.e, not motorbike)
-    // if (dbQuery['vehicle.vehicleType'] === 'z') {
-    //   dbQuery['vehicle.vehicleType'] = {$nin: '3'}
+    // note on 20170904: deprecated block
+    // if (dbQuery['ncnm']) { // 'not commercial' + 'motorcycle'
+    //   const dbQueryCopy = Object.assign({}, dbQuery);
+    //   delete dbQueryCopy['ncnm']
+    //   dbQuery = {
+    //     '$or': [
+    //         Object.assign({
+    //           'vehicle.vehicleType': {'$in': vehicleTypeIdsForMotocycle}
+    //         }, dbQueryCopy),
+    //         Object.assign({
+    //           'vehicle.vehicleType': {'$nin': vehicleTypeIdsForMotocycle},              
+    //           'vehicle.useCharacter': {'$eq': 'uc006'},
+    //         }, dbQueryCopy),
+    //     ]
+    //   }
     // }
-    // console.log(searchQuery);
-    console.log(dbQuery);
 
+    console.log(dbQuery);
     const docs = yield db.collection('vehicles').find(dbQuery, {
       'vin': 1,
       'facility': 1,
@@ -295,7 +290,15 @@ router.get('/', (req, res) => {
       'vehicle.color': 1,
       'vehicle.useCharacter': 1,
       'vehicle.conditionOnEntrance': 1,
-      'dismantling': 1
+      'vehicle.residualValueBeforeFD': 1,
+      'dismantling': 1,
+      'owner.name': 1,
+      'owner.address': 1,
+      'owner.idNo': 1,
+      'agent.name': 1,
+      'agent.idNo': 1,
+      'owner.tel': 1,
+      'feesAndDeductions': 1
     })
     .sort([['entranceDate', -1], ['createdAt', -1]])
     // .sort([['vehicle.vehicleType', -1]])
@@ -305,8 +308,6 @@ router.get('/', (req, res) => {
     return res.status(500).json(err.stack);
   })
   // return res.json(req.user);
-
-
 })
 
 router.get('/one', (req, res) => {
