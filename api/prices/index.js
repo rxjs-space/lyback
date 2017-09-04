@@ -53,6 +53,8 @@ const upsertPrices = (data, req, res) => {
         }, {
           upsert: true
         });
+
+        
         res.json({ok: true, counts: {
           // insertedCount: updateResult.insertedCount,
           // matchedCount: updateResult.matchedCount,

@@ -42,6 +42,9 @@
         yield aclInstance.allow('operationOperator', '/api/versions', 'get');
         yield aclInstance.allow('admin', '/api/tt', '*');
         yield aclInstance.allow('operationOperator', '/api/tt', 'get');
+        yield aclInstance.allow('admin', '/api/versions/compare', '*');
+        yield aclInstance.allow('operationOperator', '/api/versions/compare', 'post');
+
 ```
 
 
@@ -96,3 +99,4 @@ resources:
 /api/inventory/query post
 
 /api/versions get
+/api/versions/compare post
