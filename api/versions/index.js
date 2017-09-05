@@ -14,11 +14,11 @@ router.get('/', (req, res) => {
 });
 
 router.post('/compare', (req, res) => {
-  if (!req.body || !req.body.versions) {return res.status(400).json({
+  if (!req.body || !req.body.versionHash) {return res.status(400).json({
     message: 'No data provided.'
   })}
-  const versions = req.body.versions;
-  const collections = Object.keys(versions);
+  const versionHash = req.body.versionHash;
+  const collections = Object.keys(versionHash);
   const compareResult = {};
   co(function*() {
     const db = yield dbX.dbPromise;
@@ -26,7 +26,7 @@ router.post('/compare', (req, res) => {
 
     yield coForEach(collections, function*(collection) {
       const serverVersion = serverVersions.find(sv => sv.collection === collection)['version'];
-      const clientVersion = versions[collection];
+      const clientVersion = versionHash[collection];
       if (serverVersion === clientVersion) {
         compareResult[collection] = {
           same: true
