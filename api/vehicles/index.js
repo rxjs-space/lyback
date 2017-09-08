@@ -165,7 +165,7 @@ router.post('/', (req, res) => {
     const saveResult = yield db.collection('vehicles').insert(newVehicle);
     console.log('vehicle inserted');
     // create preDismantlingOrder
-    yield createPreDismantlingOrderPromise(db, newVehicle);
+    // yield createPreDismantlingOrderPromise(db, newVehicle); // will use different dismantlingOrder system
     res.json(saveResult);
   }).catch(err => {
     if (err.stack && err.stack.indexOf('E11000') > -1) {
