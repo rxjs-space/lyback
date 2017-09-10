@@ -12,6 +12,7 @@ const batches = require('./batches');
 const stats = require('./stats');
 const prices = require('./prices');
 const versions = require('./versions');
+const dismantlingPrepare = require('./dismantling-prepare');
 const myAcl = require('../my-acl');
 const myPassport = require('../my-passport')();
 
@@ -31,5 +32,6 @@ router.use('/inventory', inventory);
 router.use('/batches', batches);
 router.use('/prices', prices);
 router.use('/versions', versions);
+router.use('/dismantling-prepare', dismantlingPrepare);
 router.use('/dismantling-orders', dismantlingOrders);
 module.exports = router;

@@ -40,7 +40,7 @@ const basedOnEntranceMonday = (entranceMonday, dbQuery, lastMondays) => {
 const getVtbmymIdPromise = (db, patches, newVehicle) => {
   return new Promise((resolve, reject) => {
     co(function*() {
-      const vtbmymPatch = patches.patches.find(p => p.path.indexOf('vtbmym'));
+      const vtbmymPatch = patches.patches.find(p => p.path.indexOf('vtbmym') > -1);
       // if (vtbmymPatch.value === 'new') {
         let vehicleType, brand, model, year, month;
         if (newVehicle) {
@@ -51,13 +51,20 @@ const getVtbmymIdPromise = (db, patches, newVehicle) => {
           month = newVehicle.vehicle.registrationDate.substring(4, 2);
         } else {
           const vin = patches.vin;
-          const findVehicleResult = yield db.collection('vehicles').find({vin}, {'vehicle.vehicleType': 1}).toArray();
-          vehicleType = findVehicleResult[0]['vehicle.vehicleType'];
-          brand = patches.patches.find(p => p.path.indexOf('brand')).value;
-          model = patches.patches.find(p => p.path.indexOf('model')).value;
-          const registrationDate = patches.patches.find(p => p.path.indexOf('registrationDate') > -1).value;
+          const findVehicleResult = yield db.collection('vehicles').find({vin}).toArray();
+          const oldVehicle = findVehicleResult[0];
+          vehicleType = oldVehicle.vehicle.vehicleType;
+          const brandPatch = patches.patches.find(p => p.path.indexOf('brand') > -1);
+          brand = brandPatch ? brandPatch.value : oldVehicle.vehicle.brand;
+          // console.log('brand old', oldVehicle.vehicle.brand);
+          // console.log(brandPatch);
+          const modelPatch = patches.patches.find(p => p.path.indexOf('model')) > -1;
+          model = modelPatch ? modelPatch.value : oldVehicle.vehicle.model;
+          const registrationDatePatch = patches.patches.find(p => p.path.indexOf('registrationDate') > -1);
+          const registrationDate = registrationDatePatch ? registrationDatePatch.value : oldVehicle.vehicle.registrationDate;
           year = registrationDate.substring(0, 4);
           month = registrationDate.substring(4, 2);
+          // console.log(vehicleType, brand, model, year, month);
         }
 
         let vtbmymId;
