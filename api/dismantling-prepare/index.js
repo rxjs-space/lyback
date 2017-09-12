@@ -6,66 +6,55 @@ const coForEach = require('co-foreach');
 
 const strContains = require('../../utils').strContains;
 const getLastSundays = require('../../utils/last-sundays');
+const getLastMondayDates = require('../../utils').getLastMondayDates;
 const dbX = require('../../db');
 
+// console.log(getLastMondayDates(3));
 
 const rootPost = (req, res) => {
   res.json({ok: true, at: 'rootPost'});
 }
 const reportsGet = (req, res) => {
-
-
-
   co(function*() {
     let result;
-    const lastSundays = getLastSundays();  
     const db = yield dbX.dbPromise;
-
-    const resultReady = yield db.collection('vehicles').aggregate([
-      {'$match': {
-        '$or': [
-          {
-            'status2.dismantlingOrderId': {'$exists': false},
-            'status.dismantled.done': false,
-          },
-          {
-            'status2.dismantlingOrderId': '',
-            'status.dismantled.done': false,
-          },
-
-        ]
+    let resultNotReady = yield db.collection('vehicles').aggregate([
+      {$match: {
+        'status2.isDismantlingReady': false
       }},
-      {'$group': {
-        '_id': {
-          'vehicleType': '$vehicle.vehicleType',
-          'isDismantlingReady':'$status2.isDismantlingReady',
+      {$group: {
+        _id: {
+          entranceDate: '$entranceDate',
+          vehicleType: '$vehicle.vehicleType'
         },
-        'thisWeek': {'$sum': {'$cond': [
-          {'$gt': ['$entranceDate', lastSundays['1']]}, 1, 0
-        ]}},
-        'lastWeek': {'$sum': {'$cond': [
-          {'$lte': ['$entranceDate', lastSundays['1']]}, {'$cond': [
-            {'$gt': ['$entranceDate', lastSundays['2']]}, 1, 0
-          ]}, 0
-        ]}},
-        'evenEarlier': {'$sum': {'$cond': [
-          {'$lte': ['$entranceDate', lastSundays['2']]}, 1, 0
-        ]}},
-        'total': { '$sum': 1 }
+        total: {$sum: 1}
       }}
     ]).toArray();
+    resultNotReady = resultNotReady.map(r => ({
+      entranceDate: r._id.entranceDate,
+      vehicleType: r._id.vehicleType,
+      total: r.total
+    }));
 
-    result = resultReady.map(r => {
-      return {
-        'vehicle.vehicleType': r._id['vehicleType'],
-        'status2.isDismantlingReady': r._id['isDismantlingReady'],
-        thisWeek: r.thisWeek,
-        lastWeek: r.lastWeek,
-        evenEarlier: r.evenEarlier,
-        total: r.total,
-      }
-    })
+    let resultReadyNotPrepared = yield db.collection('vehicles').aggregate([
+      {$match: {
+        'status.dismantlingPrepare.done': false
+      }},
+      {$group: {
+        _id: {
+          entranceDate: '$entranceDate',
+          vehicleType: '$vehicle.vehicleType'
+        },
+        total: {$sum: 1}
+      }}
+    ]).toArray();
+    resultReadyNotPrepared = resultReadyNotPrepared.map(r => ({
+      entranceDate: r._id.entranceDate,
+      vehicleType: r._id.vehicleType,
+      total: r.total
+    }));
 
+    result = {resultNotReady, resultReadyNotPrepared};
     res.json(result);
   })
   
