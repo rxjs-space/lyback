@@ -321,7 +321,7 @@ router.get('/', (req, res) => {
 router.get('/one', (req, res) => {
   // example query 
   // /api/vehicles/one?vin=asdfa&returnIDOnly=true
-  if (!req.query.vin && !req.query.batchId) {
+  if (!req.query.vin && !req.query.batchId && !req.query.vehicleId) {
     return res.status(400).json({
       message: "insufficient parameters."
     })
@@ -336,6 +336,12 @@ router.get('/one', (req, res) => {
           message: `no vehicle whose vin is ${req.query.vin}`
         })}
         vehicle = docs[0];
+        break;
+      case !!req.query.vehicleId:
+        vehicle = yield db.collection('vehicles').findOne({_id: new ObjectID(req.query.vehicleId)});
+        if (!vehicle) {return res.status(400).json({
+          message: `no vehicle whose id is ${req.query.vehicleId}`
+        })}
         break;
       case !!req.query.batchId:
         vehicle = yield db.collection('vehicles').findOne({batchId: req.query.batchId});

@@ -191,7 +191,8 @@ router.post('/', (req, res) => {
       createdAt: vPatchedAt,
       createdBy: userId,
       trigger: 'dismantlingOrderPatches',
-      triggerRef: patchesId
+      triggerRef: patchesId,
+      vin: newDismantlingOrder.vin
     };
     const vPatchesSaveResult = yield db.collection('vehiclePatches').insert(vPatches);
     writeStatus.vehiclePatches = true;
