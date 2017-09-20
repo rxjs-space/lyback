@@ -25,7 +25,9 @@ router.post('/compare', (req, res) => {
     const serverVersions = yield db.collection('versions').find({}).toArray();
 
     yield coForEach(collections, function*(collection) {
-      const serverVersion = serverVersions.find(sv => sv.collection === collection)['version'];
+      const serverVersionDoc = serverVersions.find(sv => sv.collection === collection);
+      const serverVersion = serverVersionDoc['version'];
+      // will delete serverVersion from result later
       const clientVersion = versionHash[collection];
       if (serverVersion === clientVersion) {
         compareResult[collection] = {
@@ -36,7 +38,8 @@ router.post('/compare', (req, res) => {
         compareResult[collection] = {
           same: false,
           newData,
-          newVersion: serverVersion
+          newVersion: serverVersion,
+          newVersionDoc: serverVersionDoc
         }
       }
     })

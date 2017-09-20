@@ -78,6 +78,14 @@ router.patch('/one', (req, res) => {
       {name},
       patchesToApply
     );
+    const updateVersionResult = yield db.collection('versions').updateOne({
+      collection: 'tt'
+    }, {
+      '$set': {version: `${(new Date()).toISOString().substring(0, 10)}:${Math.random()}`}
+    }, {
+      upsert: true
+    });
+
     res.json(updateResult);
     // console.log(patchesToApply);
     // res.json({
