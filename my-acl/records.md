@@ -44,6 +44,7 @@
         yield aclInstance.allow('operationOperator', '/api/tt', 'get');
         yield aclInstance.allow('admin', '/api/versions/compare', '*');
         yield aclInstance.allow('operationOperator', '/api/versions/compare', 'post');
+        yield aclInstance.allow('operationOperator', '/api/dismantling-prepare', 'get');
 
 ```
 

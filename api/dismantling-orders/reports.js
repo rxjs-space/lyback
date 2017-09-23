@@ -9,7 +9,7 @@ const startDay = (new Date());
 const onedayMS = 1000 * 60 * 60 * 24;
 const nineDaysAgo = (new Date(Date.parse(startDay) - onedayMS * 9));
 const nineDaysAgoDate = nineDaysAgo.toISOString().slice(0, 10);
-const tenDaysAgo = getDaysAgoDate(new Date(), 10);
+const elevenDaysAgoDate = getDaysAgoDate(new Date(), 11);
 // console.log(tenDaysAgo);
 module.exports = (req, res) => {
   let result;
@@ -134,7 +134,7 @@ module.exports = (req, res) => {
         }));
         let resultCompletedLastTenDays2 = yield db.collection('dismantlingOrders').aggregate([
           {'$match': {
-            'completedAt': {'$gte': `${tenDaysAgo}T16:00:00.000Z`}
+            'completedAt': {'$gte': `${elevenDaysAgoDate}T16:00:00.000Z`}
           }},
           {'$group': {
             '_id': {

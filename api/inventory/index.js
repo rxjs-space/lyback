@@ -49,10 +49,10 @@ router.post('/query', (req, res) => {
       let aggregateResult = yield db.collection('inventory').aggregate([
         {'$match': queryParamsInventory},
         {'$lookup': {
-          from: "vtbmym",
-          localField: "vtbmymId",
-          foreignField: "_id",
-          as: "vtbmym_detail"
+          from: 'vtbmym',
+          localField: 'vtbmymId',
+          foreignField: '_id',
+          as: 'vtbmym_detail'
         }},
         {'$unwind': '$vtbmym_detail'},
         {'$project': {
