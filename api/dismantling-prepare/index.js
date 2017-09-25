@@ -32,7 +32,8 @@ const rootGet = (req, res) => {
           }},
           {$unwind: '$vehicleDetails'},
           {$project: {
-            _id: 1, vehicleId: '$vehicleIds', createdAt: 1, createdBy: 1, vin: '$vehicleDetails.vin',
+            _id: 1, vehicleId: '$vehicleIds', createdAt: 1, createdBy: 1,
+            batchId: '$vehicleDetails.batchId', vin: '$vehicleDetails.vin',
             plateNo: '$vehicleDetails.vehicle.plateNo', vehicleType: '$vehicleDetails.vehicle.vehicleType'
           }}
         ]).toArray();
@@ -103,7 +104,7 @@ const rootPost = (req, res) => {
 
     res.json(saveResult);
   }).catch(err => {
-    console.log('error at [dismanltingPrepare/post]:', err.stack);
+    console.log('error at [POST dismanlting-prepare]:', err.stack);
     return res.status(500).json(err.stack);
   });
 }
@@ -156,6 +157,6 @@ const reportsGet = (req, res) => {
 
 router.post('/', rootPost);
 router.get('/reports', reportsGet);
-router.get('/', rootGet);
+router.get('/', rootGet); // with queryParma recentOnly, return a list of vehicles with batchCreatedAt
 
 module.exports = router;
