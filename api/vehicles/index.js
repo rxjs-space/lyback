@@ -235,6 +235,10 @@ router.get('/', (req, res) => {
         case 'entranceMonday':
           dbQuery = basedOnEntranceMonday(searchQuery[k], dbQuery, getLastMondays());
           break;
+        case 'byIdList':
+          const idList = searchQuery[k].map(id => new ObjectID(id));
+          dbQuery['_id'] = {$in: idList};
+          break;
         default:
           dbQuery[k] = searchQuery[k];
       }

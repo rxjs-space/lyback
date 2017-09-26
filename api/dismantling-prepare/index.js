@@ -14,32 +14,42 @@ const rootGet = (req, res) => {
   // accept queryParams
   co(function*() {
     const db = yield dbX.dbPromise;
+    let queryResult;
     switch (true) {
       case req.query.recentOnly && JSON.parse(req.query.recentOnly):
         const sevenDaysAgoBeijingZeroHours = `${getDaysAgoDate(new Date(), 8)}T16:00:00.000Z`;
         console.log(sevenDaysAgoBeijingZeroHours);
         // get all batches which is created after sevenDaysAgoBeijingZero
-        const queryResult = yield db.collection('dismantlingPrepareBatches').aggregate([
+        queryResult = yield db.collection('dismantlingPrepareBatches').aggregate([
           {$match: {
             'createdAt': {'$gte': sevenDaysAgoBeijingZeroHours}
           }},
-          {$unwind: '$vehicleIds'},
-          {$lookup: {
-            from: 'vehicles',
-            localField: 'vehicleIds',
-            foreignField: '_id',
-            as: 'vehicleDetails'
-          }},
-          {$unwind: '$vehicleDetails'},
-          {$project: {
-            _id: 1, vehicleId: '$vehicleIds', createdAt: 1, createdBy: 1,
-            batchId: '$vehicleDetails.batchId', vin: '$vehicleDetails.vin',
-            plateNo: '$vehicleDetails.vehicle.plateNo', vehicleType: '$vehicleDetails.vehicle.vehicleType'
-          }}
-        ]).toArray();
+          {$sort: {'createdAt': -1}}
+          // {$unwind: '$vehicleIds'},
+          // {$lookup: {
+          //   from: 'vehicles',
+          //   localField: 'vehicleIds',
+          //   foreignField: '_id',
+          //   as: 'vehicleDetails'
+          // }},
+          // {$unwind: '$vehicleDetails'},
+          // {$project: {
+          //   _id: 1, vehicleId: '$vehicleIds', createdAt: 1, createdBy: 1,
+          //   batchId: '$vehicleDetails.batchId', vin: '$vehicleDetails.vin',
+          //   plateNo: '$vehicleDetails.vehicle.plateNo', vehicleType: '$vehicleDetails.vehicle.vehicleType'
+          // }}
+        ])
+        .toArray();
+        res.json(queryResult);
+        break;
+      case !!req.query._id:
+        queryResult = yield db.collection('dismantlingPrepareBatches').findOne({
+          _id: new ObjectID(JSON.parse(req.query._id))
+        });
         res.json(queryResult);
         break;
       default:
+        console.log(req.query);
         res.json({
           ok: true
         })
@@ -68,9 +78,11 @@ const rootPost = (req, res) => {
 
   co(function*() {
     const db = yield dbX.dbPromise;
-    const vehicleIdsInObjectID = req.body.vehicleIds.map(id => new ObjectID(id));
+    const vehicles = req.body.vehicleIds.map(id => ({
+      vehicleId: new ObjectID(id)
+    }));
     const newBatch = {
-      vehicleIds: vehicleIdsInObjectID,
+      vehicles,
       createdAt: (new Date()).toISOString(),
       createdBy: req.user._id
     };
@@ -78,6 +90,7 @@ const rootPost = (req, res) => {
     const saveResult = yield db.collection('dismantlingPrepareBatches').insert(newBatch);
     console.log('new dismantlingPrepare batch inserted');
     const batchId = saveResult.insertedIds[0];
+    const batch = yield db.collection('dismantlingPrepareBatches').findOne({_id: batchId});
     yield coForEach(req.body.vehicleIds, function*(vehicleId) {
       const vPatches = {
         patches: [
@@ -102,7 +115,7 @@ const rootPost = (req, res) => {
       );
     });
 
-    res.json(saveResult);
+    res.json(batch);
   }).catch(err => {
     console.log('error at [POST dismanlting-prepare]:', err.stack);
     return res.status(500).json(err.stack);
