@@ -127,7 +127,8 @@ const reportsGet = (req, res) => {
     const db = yield dbX.dbPromise;
     let resultNotReady = yield db.collection('vehicles').aggregate([
       {$match: {
-        'status2.isDismantlingReady': false
+        'status2.isDismantlingReady': false,
+        'metadata.isDeleted': false
       }},
       {$group: {
         _id: {
@@ -146,7 +147,8 @@ const reportsGet = (req, res) => {
     let resultReadyNotPrepared = yield db.collection('vehicles').aggregate([
       {$match: {
         'status2.isDismantlingReady': true,
-        'status.dismantlingPrepare.done': false
+        'status.dismantlingPrepare.done': false,
+        'metadata.isDeleted': false
       }},
       {$group: {
         _id: {

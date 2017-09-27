@@ -26,7 +26,8 @@ const reportsGet = (req, res) => {
           {'$match': {
             'facility': {'$eq': facility},
             'status2.isSurveyReady': false,
-            'surveyRounds': {'$ne': 'zero'}
+            'surveyRounds': {'$ne': 'zero'},
+            'metadata.isDeleted': false
           }},
           {'$group': {
             '_id': {
@@ -43,7 +44,8 @@ const reportsGet = (req, res) => {
             'facility': {'$eq': facility},
             'status2.isSurveyReady': true,
             'surveyRounds': {'$eq': 'one'},
-            'status.firstSurvey.done': false
+            'status.firstSurvey.done': false,
+            'metadata.isDeleted': false
           }},
           {'$group': {
             '_id': {
@@ -60,7 +62,8 @@ const reportsGet = (req, res) => {
             'facility': {'$eq': facility},
             'status2.isSurveyReady': true,
             'surveyRounds': {'$eq': 'two'},
-            'status.secondSurvey.done': false
+            'status.secondSurvey.done': false,
+            'metadata.isDeleted': false
           }},
           {'$group': {
             '_id': {
@@ -79,7 +82,8 @@ const reportsGet = (req, res) => {
           {'$match': {
             'facility': {'$eq': facility},
             'entranceDate': {'$gte': `${twoWeeksAgoDate}T16:00:00.000Z`},
-            'surveyRounds': {'$eq': 'zero'}
+            'surveyRounds': {'$eq': 'zero'},
+            'metadata.isDeleted': false
           }},
           {'$group': {
             '_id': {
@@ -201,7 +205,8 @@ const rootGet = (req, res) => {
           yield coForEach(ongoingBatches, function*(batch) {
             const vehicleIds = batch.vehicles.map(v => v.vehicleId);
             const vehiclesOfTheBatch = yield db.collection('vehicles').find({
-              _id: {$in: vehicleIds}
+              _id: {$in: vehicleIds},
+              'metadata.isDeleted': false
             }, {
               'vin': 1,
               'batchId': 1,

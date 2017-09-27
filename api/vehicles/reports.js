@@ -26,7 +26,8 @@ module.exports = (req, res) => {
         let resultMofcomIdle = yield db.collection('vehicles').aggregate([
           {$match: {
             'status.mofcomCertReady.done': false,
-            'entranceStatus': 'est01'
+            'entranceStatus': 'est01',
+            'metadata.isDeleted': false
           }},
           {$group: {
             _id: {
@@ -63,7 +64,8 @@ module.exports = (req, res) => {
         const tenDaysAgoDate = getDaysAgoDate(new Date(), 10);
         const resultOnTheWayAndPaperWorkNotSubmitted = yield db.collection('vehicles').aggregate([
           {'$match': {
-            'entranceStatus': {'$ne': 'est01'}
+            'entranceStatus': {'$ne': 'est01'},
+            'metadata.isDeleted': false
           }},
           {'$group': {
             '_id': {'entranceStatus': '$entranceStatus'},
@@ -77,7 +79,8 @@ module.exports = (req, res) => {
         }));
         const resultLatest10Days = yield db.collection('vehicles').aggregate([
           {'$match': {
-            'entranceDate': {'$gt': tenDaysAgoDate}
+            'entranceDate': {'$gt': tenDaysAgoDate},
+            'metadata.isDeleted': false            
           }},
           {'$group': {
             '_id': {
@@ -96,7 +99,8 @@ module.exports = (req, res) => {
         }))
         const resultLastFiveWeeks = yield db.collection('vehicles').aggregate([
           {'$match': {
-            'entranceDate': {'$gte': lastMondays['5']}
+            'entranceDate': {'$gte': lastMondays['5']},
+            'metadata.isDeleted': false
           }},
           {'$group': {
             '_id': {
@@ -144,7 +148,8 @@ module.exports = (req, res) => {
         resultIsSurveyNotReady = yield db.collection('vehicles').aggregate([
           {'$match': {
             'status2.isSurveyReady': false,
-            'surveyRounds': {'$ne': 'zero'}
+            'surveyRounds': {'$ne': 'zero'},
+            'metadata.isDeleted': false
           }},
           {'$group': {
             '_id': {
@@ -176,7 +181,8 @@ module.exports = (req, res) => {
 
         resultZeroSurvey = yield db.collection('vehicles').aggregate([
           {'$match': {
-            'surveyRounds': 'zero'
+            'surveyRounds': 'zero',
+            'metadata.isDeleted': false
           }},
           {'$group': {
             '_id': {
@@ -211,6 +217,7 @@ module.exports = (req, res) => {
             'status.firstSurvey.done': false,
             'status2.isSurveyReady': true,
             'surveyRounds': 'one',
+            'metadata.isDeleted': false
           }},
           {'$group': {
             '_id': {
@@ -246,6 +253,7 @@ module.exports = (req, res) => {
             'status.secondSurvey.done': false,
             'status2.isSurveyReady': true,
             'surveyRounds': 'two',
+            'metadata.isDeleted': false
           }},
           {'$group': {
             '_id': {
@@ -290,7 +298,8 @@ module.exports = (req, res) => {
         let resultEntranceYesterday = yield db.collection('vehicles').aggregate([
           {'$match': {
             'entranceDate': {'$eq': yesterdayDate},
-            'entranceStatus': 'est01'
+            'entranceStatus': 'est01',
+            'metadata.isDeleted': false
           }},
           {'$project': {
             'vehicle.vehicleType': 1,
@@ -366,7 +375,8 @@ module.exports = (req, res) => {
           {'$match': {
             'entranceDate': {'$eq': yesterdayDate},
             'status.mofcomCertReady.done': false,
-            'entranceStatus': 'est01'
+            'entranceStatus': 'est01',
+            'metadata.isDeleted': false
           }},
           {'$group': {
             '_id': {
@@ -402,7 +412,8 @@ module.exports = (req, res) => {
         let resultEntranceYesterdayDismantlingReadiness = yield db.collection('vehicles').aggregate([
           {'$match': {
             'entranceDate': {'$eq': yesterdayDate},
-            'entranceStatus': 'est01'
+            'entranceStatus': 'est01',
+            'metadata.isDeleted': false
           }},
           {'$group': {
             '_id': {
@@ -429,7 +440,8 @@ module.exports = (req, res) => {
         let resultEntranceYesterdayOnTheWayOrPaperWorkNotSubmitted = yield db.collection('vehicles').aggregate([
           {'$match': {
             'entranceDate': {'$eq': yesterdayDate},
-            'entranceStatus': {'$ne': 'est01'}
+            'entranceStatus': {'$ne': 'est01'},
+            'metadata.isDeleted': false
           }},
           {'$group': {
             '_id': {
@@ -454,7 +466,8 @@ module.exports = (req, res) => {
       case req.query.title === 'currentSate':
         let resultCurrentStateByDismantling = yield db.collection('vehicles').aggregate([
           {'$match': {
-            'status.dismantled.done': false
+            'status.dismantled.done': false,
+            'metadata.isDeleted': false
           }},
           {'$project': {
             'vehicle.vehicleType': 1,

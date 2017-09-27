@@ -27,10 +27,12 @@ module.exports = (req, res) => {
               {
                 'status2.dismantlingOrderId': {'$exists': false},
                 'status.dismantled.done': false,
+                'metadata.isDeleted': false
               },
               {
                 'status2.dismantlingOrderId': '',
                 'status.dismantled.done': false,
+                'metadata.isDeleted': false
               },
 
             ]

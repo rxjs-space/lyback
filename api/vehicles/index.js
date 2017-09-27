@@ -281,7 +281,7 @@ router.get('/', (req, res) => {
     //     ]
     //   }
     // }
-
+    dbQuery['metadata.isDeleted'] = false;
     console.log(dbQuery);
     const docs = yield db.collection('vehicles').find(dbQuery, {
       'vin': 1,
@@ -551,7 +551,9 @@ router.get('/search', (req, res) => {
     }));
 
     let resultBatchId = yield db.collection('vehicles').aggregate([
-      {$match: {batchId: {$regex: key}}},
+      {$match: {
+        batchId: {$regex: key},
+      }},
       {$group: {
         _id: {batchId: '$batchId'}
       }}
