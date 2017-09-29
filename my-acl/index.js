@@ -38,7 +38,7 @@ module.exports = {
         const id = req.user._id.toHexString();
         // yield aclInstance.allow('admin', '/api/surveys', '*');
         // yield aclInstance.allow('admin', '/api/surveys/reports', '*');
-        // yield aclInstance.allow('operationOperator', '/api/surveys', ['get', 'post']);
+        // yield aclInstance.allow('operationOperator', '/api/surveys', 'patch');
         // yield aclInstance.allow('operationOperator', '/api/surveys/reports', 'get');
 
         // yield aclInstance.removeUserRoles(id, 'user');

@@ -466,7 +466,7 @@ router.patch('/one', (req, res) => {
       const pullKeys = [];
       Object.keys(patchesToApply['$unset']).forEach(k => {
         const routes = k.split('.');
-        const pullKey = routes.slice(0, routes.length - 1);
+        const pullKey = routes.slice(0, routes.length - 1).join('.');
         if (pullKeys.indexOf(pullKey) === -1) {
           pullKeys.push(pullKey);
         }

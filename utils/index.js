@@ -43,3 +43,7 @@ exports.getLastMondayDates = (count = 10, timeZoneOffset = 8) => {
   }
   return lastMondayDates;
 };
+
+exports.simpleEquals = (a, b) => {
+  return a === b;
+}
