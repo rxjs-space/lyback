@@ -9,6 +9,9 @@ const getDaysAgoDate = require('../../utils').getDaysAgoDate;
 const dbX = require('../../db');
 const simpleEquals = require('../../utils').simpleEquals;
 
+const dataCollectionName = 'paymentToOwnerBatches';
+const patchesCollectionName = 'paymentToOwnerBatchPatches';
+
 const reportsGet = (req, res) => {
   const title = req.query.title;
   const facility = req.query.facility;
@@ -22,105 +25,87 @@ const reportsGet = (req, res) => {
     const db = yield dbX.dbPromise;
     switch (true) {
       case title === 'countByTypes':
-        // not ready, recent 0 surveys, 1st survey ready, 2nd survey ready
-        let resultNotReady = yield db.collection('vehicles').aggregate([
-          {'$match': {
-            'facility': {'$eq': facility},
-            'status2.isSurveyReady': false,
-            'surveyRounds': {'$ne': 'zero'},
-            'metadata.isDeleted': false
+        const daysAgo = getDaysAgoDate(new Date(), 14);
+        // 0 residual value, not paid
+        let resultZeroRD = yield db.collection('vehicles').aggregate([
+          {$match: {
+            facility: facility,
+            entranceDate: {'$gte': `${daysAgo}`}
           }},
-          {'$group': {
-            '_id': {
-              'facility': '$facility'
-            },
-            'total': {
-              '$sum': 1
+          {$project: {
+            // rvBeforeFD: '$vehicle.residualValueBeforeFD',
+            // fdValues: {
+            //   $map: {
+            //     input: '$feesAndDeductions',
+            //     as: 'fd',
+            //     in: '$$fd.amount'
+            // }},
+            facility: 1,
+            rvAfterFD: {
+              $subtract: [
+                {$cond: [
+                  {$eq: ['$vehicle.residualValueBeforeFD', '']},
+                  0,
+                  '$vehicle.residualValueBeforeFD'
+                ]},
+                {$sum: {
+                  $map: {
+                      input: '$feesAndDeductions',
+                      as: 'fd',
+                      in: '$$fd.amount'
+                    }
+                }}
+              ]
             }
+          }},
+          {$match: {
+            rvAfterFD: {$eq: 0}
+          }},
+          {$group: {
+            '_id': {facility: '$facility'},
+            'total': {'$sum': 1}
           }}
         ]).toArray();
-        
+        resultZeroRD = resultZeroRD.map(r => r.total)[0];
 
-        let resultReadyOne = yield db.collection('vehicles').aggregate([
-          {'$match': {
-            'facility': {'$eq': facility},
-            'status2.isSurveyReady': true,
-            'surveyRounds': {'$eq': 'one'},
-            'status.firstSurvey.done': false,
-            'metadata.isDeleted': false,
-            'status2.surveyBatchIds': {$size: 0}
+        let resultNotPaid = yield db.collection('vehicles').aggregate([
+          {$match: {
+            facility: facility,
+            'status.paymentToOwner.done': false,
+            'status2.paymentToOwnerBatchIds': {$size: 0}
           }},
-          {'$group': {
-            '_id': {
-              'facility': '$facility',
-            },
-            'total': {
-              '$sum': 1
+          {$project: {
+            facility: 1,
+            rvAfterFD: {
+              $subtract: [
+                {$cond: [
+                  {$eq: ['$vehicle.residualValueBeforeFD', '']},
+                  0,
+                  '$vehicle.residualValueBeforeFD'
+                ]},
+                {$sum: {
+                  $map: {
+                    input: '$feesAndDeductions',
+                    as: 'fd',
+                    in: '$$fd.amount'
+                  }
+                }}
+              ]
             }
-          }}
-        ]).toArray();
-        resultReadyOne = resultReadyOne[0].total;
-
-
-        
-        let resultReadyTwo = yield db.collection('vehicles').aggregate([
-          {'$match': {
-            'facility': {'$eq': facility},
-            'status2.isSurveyReady': true,
-            'surveyRounds': {'$eq': 'two'},
-            'status.secondSurvey.done': false,
-            'metadata.isDeleted': false
           }},
-          {'$group': {
-            '_id': {
-              'firstSurveyDone': '$status.firstSurvey.done',
-              'surveyBatchIdCount': { $size: "$status2.surveyBatchIds" },              
-            },
-            'total': {
-              '$sum': 1
-            }
-          }}
-        ]).toArray();
-        resultReadyTwo = resultReadyTwo.reduce((acc, curr) => {
-          // keep only the number for vehicles not listed in batches
-          switch (true) {
-            case !curr._id.firstSurveyDone && simpleEquals(curr._id.surveyBatchIdCount, 0):
-              acc.firstSurveyNotDone += curr.total;
-              break;
-            case curr._id.firstSurveyDone && simpleEquals(curr._id.surveyBatchIdCount, 1):
-              acc.firstSurveyDone += curr.total;
-              break;
-          }
-          return acc;
-        }, {
-          firstSurveyDone: 0,
-          firstSurveyNotDone: 0
-        });
-
-
-        const twoWeeksAgoDate = getDaysAgoDate(new Date(), 14);
-        let resultZeroSurvey = yield db.collection('vehicles').aggregate([
-          {'$match': {
-            'facility': {'$eq': facility},
-            'entranceDate': {'$gte': `${twoWeeksAgoDate}T16:00:00.000Z`},
-            'surveyRounds': {'$eq': 'zero'},
-            'metadata.isDeleted': false
+          {$match: {
+            rvAfterFD: {$ne: 0}
           }},
-          {'$group': {
-            '_id': {
-              'facility': '$facility'
-            },
-            'total': {
-              '$sum': 1
-            }
+          {$group: {
+            '_id': {facility: '$facility'},
+            'total': {'$sum': 1}
           }}
+
         ]).toArray();
-        
+        resultNotPaid = resultNotPaid.map(r => r.total)[0];
         const result = {
-          resultNotReady: resultNotReady[0] ? resultNotReady[0].total : 0,
-          resultReadyOne,
-          resultReadyTwo,
-          resultZeroSurvey: resultZeroSurvey[0] ? resultZeroSurvey[0].total : 0
+          resultZeroRD,
+          resultNotPaid
         };
         return res.json(result);
       default:
@@ -159,10 +144,10 @@ const rootPost = (req, res) => {
       completed: false
     };
 
-    const saveResult = yield db.collection('surveyBatches').insert(newBatch);
-    console.log('new survey batch inserted');
+    const saveResult = yield db.collection(dataCollectionName).insert(newBatch);
+    console.log('new payment-to-owner batch inserted');
     const batchId = saveResult.insertedIds[0];
-    const batch = yield db.collection('surveyBatches').findOne({_id: batchId});
+    const batch = yield db.collection(dataCollectionName).findOne({_id: batchId});
     const patches = {
       batchId,
       patches: [
@@ -171,7 +156,7 @@ const rootPost = (req, res) => {
       patchedAt: newBatch.createdAt,
       patchedBy: newBatch.createdBy
     };
-    const patchesSaveResult = yield db.collection('surveyBatchPatches').insert(patches);
+    const patchesSaveResult = yield db.collection(patchesCollectionName).insert(patches);
 
     /* update vehiclePatches and vehicle */
     yield coForEach(vehicles, function*(vehicle) {
@@ -180,11 +165,11 @@ const rootPost = (req, res) => {
         patches: [
           {op: 'replace', path: '/modifiedAt', value: newBatch.createdAt},
           {op: 'replace', path: '/modifiedBy', value: newBatch.createdBy},
-          {op: 'add', path: '/status2/surveyBatchIds', value: batchId}
+          {op: 'add', path: '/status2/paymentToOwnerBatchIds', value: batchId}
         ],
         createdAt: newBatch.createdAt,
         createdBy: newBatch.createdBy,
-        trigger: 'surveyBatches',
+        trigger: dataCollectionName,
         triggerRef: batchId,
         vehicleId
       };
@@ -197,9 +182,9 @@ const rootPost = (req, res) => {
       );
     });
 
-    res.json(batch);
+    res.json(batch); // return the full batch data, not the saveResult
   }).catch(err => {
-    console.log('error at [POST surveys]:', err.stack);
+    console.log('error at [POST payments-to-owner]:', err.stack);
     return res.status(500).json(err.stack);
   });
 };
@@ -229,37 +214,33 @@ const rootPatch = (req, res) => {
     console.log('patchesToApply', patchesToApply);
 
 
-    const insertToPatchesResult = yield db.collection('surveyBatchPatches').insert(patches);
-    const updateResult = yield db.collection('surveyBatches').updateOne(
+    const insertToPatchesResult = yield db.collection(patchesCollectionName).insert(patches);
+    const updateResult = yield db.collection(dataCollectionName).updateOne(
       {_id: batchId},
       patchesToApply
     );
-    const newBatch = yield db.collection('surveyBatches').findOne({_id: batchId});
+    const newBatch = yield db.collection(dataCollectionName).findOne({_id: batchId});
     const vehicles = newBatch.vehicles;
-    // update vehicles (which surveyDone, delete surveyBatchId if not successful)
     yield coForEach(vehicles, function*(vehicle) {
       const vehicleId = vehicle.vehicleId;
-      const surveyOrdinal = vehicle.surveyOrdinal;
-      let surveyResultPatches;
+      let batchResultPatch;
       if (vehicle.success) {
-        surveyResultPatches = [
-          {op: 'replace', path: `/status/${surveyOrdinal}Survey/done`, value: true},
-          {op: 'replace', path: `/status/${surveyOrdinal}Survey/date`, value: patchedAt}
+        batchResultPatch = [
+          {op: 'replace', path: `/paymentToOwner/done`, value: true},
+          {op: 'replace', path: `/paymentToOwner/date`, value: patchedAt}
         ]
       } else {
-        // how to write delete array element patch?
-        const idIndex = surveyOrdinal === 'first' ? 0 : 1;
-        surveyResultPatches = [{op: 'remove', path: `/status2/surveyBatchIds/${idIndex}`}];
+        batchResultPatch = [{op: 'remove', path: `/status2/paymentToOwnerBatchIds/0`}];
       }
       const vPatches = {
         patches: [
           {op: 'replace', path: '/modifiedAt', value: patchedAt},
           {op: 'replace', path: '/modifiedBy', value: patchedBy},
-          ...surveyResultPatches
+          ...batchResultPatch
         ],
         createdAt: patchedAt,
         createdBy: patchedBy,
-        trigger: 'surveyBatches',
+        trigger: dataCollectionName,
         triggerRef: batchId,
         vehicleId
       };
@@ -306,6 +287,7 @@ const rootPatch = (req, res) => {
     res.json(updateResult);
 
   }).catch(err => {
+    console.log('Error at [payments-to-owner PATCH]:', err);
     return res.status(500).json(err.stack);
   })
 
@@ -323,14 +305,14 @@ const rootGet = (req, res) => {
     const db = yield dbX.dbPromise;
     switch (title) {
       case 'progressingBatches':
-        const progressingBatches = yield db.collection('surveyBatches').find({$or: [
+        const progressingBatches = yield db.collection(dataCollectionName).find({$or: [
           {completed: false, canceled: false},
           {completed: false, canceled: {$exists: false}},
         ]}).toArray();
         return res.json(progressingBatches);
       case 'recentCompletedBatches': // completedAt within 5 weeks
         const thirtyFiveDaysAgoDate = getDaysAgoDate(new Date(), 35);
-        const recentCompletedBatches = yield db.collection('surveyBatches').find({$or: [
+        const recentCompletedBatches = yield db.collection(dataCollectionName).find({$or: [
           {
             completed: true,
             completedAt: {'$gte': `${thirtyFiveDaysAgoDate}T16:00:00.000Z`}
@@ -343,10 +325,8 @@ const rootGet = (req, res) => {
         ]}).toArray();
         return res.json(recentCompletedBatches);
     }
-
-
   }).catch(err => {
-    console.log('error at [surveyBatch/get]:', err.stack);
+    console.log('error at [paymentToOwnerBatch/get]:', err.stack);
     return res.status(500).json(err.stack);
   });
 

@@ -7,6 +7,7 @@ const strContains = require('../../utils').strContains;
 const dbX = require('../../db');
 const getLastSundays = require('../../utils/last-sundays');
 const getLastMondays = require('../../utils/last-mondays');
+const getDaysAgoDate = require('../../utils').getDaysAgoDate;
 
 const basedOnEntranceWeek = {
   'thisWeek': (dbQuery, lastSundays) => {
@@ -204,83 +205,32 @@ Error: read ECONNRESET
 
 })
 
-router.get('/', (req, res) => {
+const rootGetDefault = (req, res, queryParams, keys) => {
   co(function*() {
     const db = yield dbX.dbPromise;
 
-    const ttQueryResult = yield db.collection('tt').find({name: 'types'}).toArray();
-    const vehicleTypeIdsForMotocycle = ttQueryResult[0]['vehicleTypeIdsForMotocycle'];
-
-
-    const searchQuery = req.query;
-    const keys = Object.keys(searchQuery);
-    keys.forEach(k => {
-      searchQuery[k] = JSON.parse(searchQuery[k]);
-    })
-    console.log(searchQuery);
-    // turn string 'true' into boolean true
-    if (keys.length) {
-      for (const k of keys) {
-        if (searchQuery[k] === 'true') {searchQuery[k] = true; }
-        if (searchQuery[k] === 'false') {searchQuery[k] = false; }
-      }
-    }
+    // const ttQueryResult = yield db.collection('tt').find({name: 'types'}).toArray();
+    // const vehicleTypeIdsForMotocycle = ttQueryResult[0]['vehicleTypeIdsForMotocycle'];
+   
     let dbQuery = {};
     // turn req.query into dbQuery
     for (let k of keys) {
       switch (k) {
         case 'entranceWeek':
-          dbQuery = basedOnEntranceWeek[searchQuery[k]](dbQuery, getLastSundays());
+          dbQuery = basedOnEntranceWeek[queryParams[k]](dbQuery, getLastSundays());
           break;
         case 'entranceMonday':
-          dbQuery = basedOnEntranceMonday(searchQuery[k], dbQuery, getLastMondays());
+          dbQuery = basedOnEntranceMonday(queryParams[k], dbQuery, getLastMondays());
           break;
         case 'byIdList':
-          const idList = searchQuery[k].map(id => new ObjectID(id));
+          const idList = queryParams[k].map(id => new ObjectID(id));
           dbQuery['_id'] = {$in: idList};
           break;
         default:
-          dbQuery[k] = searchQuery[k];
+          dbQuery[k] = queryParams[k];
       }
 
     }
-
-    switch(dbQuery['vehicle.vehicleType']) {
-      case 'non-motorcycle':
-        dbQuery['vehicle.vehicleType'] = {$nin: vehicleTypeIdsForMotocycle}
-        break;
-      case 'motorcycle':
-        dbQuery['vehicle.vehicleType'] = {$in: vehicleTypeIdsForMotocycle}
-        break;
-    }
-    switch(dbQuery['vehicle.useCharacter']) {
-      case 'non-commercial':
-        dbQuery['vehicle.useCharacter'] = {$eq: 'uc006'}
-        break;
-      case 'commercial':
-        dbQuery['vehicle.useCharacter'] = {$ne: 'uc006'}
-        break;
-    }
-    // if (dbQuery['status2.dismantlingOrderId']) {
-    //   dbQuery['status2.dismantlingOrderId'] = JSON.parse(dbQuery['status2.dismantlingOrderId']);
-    // }
-
-    // note on 20170904: deprecated block
-    // if (dbQuery['ncnm']) { // 'not commercial' + 'motorcycle'
-    //   const dbQueryCopy = Object.assign({}, dbQuery);
-    //   delete dbQueryCopy['ncnm']
-    //   dbQuery = {
-    //     '$or': [
-    //         Object.assign({
-    //           'vehicle.vehicleType': {'$in': vehicleTypeIdsForMotocycle}
-    //         }, dbQueryCopy),
-    //         Object.assign({
-    //           'vehicle.vehicleType': {'$nin': vehicleTypeIdsForMotocycle},              
-    //           'vehicle.useCharacter': {'$eq': 'uc006'},
-    //         }, dbQueryCopy),
-    //     ]
-    //   }
-    // }
     dbQuery['metadata.isDeleted'] = false;
     console.log(dbQuery);
     const docs = yield db.collection('vehicles').find(dbQuery, {
@@ -316,10 +266,178 @@ router.get('/', (req, res) => {
     .sort([['entranceDate', -1], ['createdAt', -1]])
     // .sort([['vehicle.vehicleType', -1]])
     .toArray();
-    res.json(docs);
+    return res.json(docs);
   }).catch((err) => {
     return res.status(500).json(err.stack);
   })
+}
+
+const rootGetPaymentToOwnerReady = (req, res) => {
+  const facility = req.query.facility;
+  if (!facility) {
+    return res.status(400).json({
+      message: "insufficient parameters."
+    });
+  }
+
+  co(function*() {
+    const db = yield dbX.dbPromise;
+    let resultNotPaidNorProcessing = yield db.collection('vehicles').aggregate([
+      {$match: {
+        facility: facility,
+        'status.paymentToOwner.done': false,
+        'status2.paymentToOwnerBatchIds': {$size: 0}
+      }},
+      {$project: {
+        'vin': 1,
+        'batchId': 1,
+        'facility': 1,
+        // 'entranceStatus': 1,
+        'entranceDate': 1,
+        // 'surveyRounds': 1,
+        // 'vtbmym': 1,
+        // 'estimatedSurveyDateFirst': 1,
+        // 'estimatedSurveyDateSecond': 1,
+        'status': 1,
+        'status2': 1,
+        'vehicle.plateNo': 1,
+        'vehicle.vehicleType': 1,
+        'vehicle.brand': 1,
+        // 'vehicle.model': 1,
+        // 'vehicle.color': 1,
+        // 'vehicle.engineNo': 1,
+        // 'vehicle.useCharacter': 1,
+        // 'vehicle.conditionOnEntrance': 1,
+        'vehicle.residualValueBeforeFD': 1,
+        // 'dismantling': 1,
+        // 'owner.name': 1,
+        // 'owner.address': 1,
+        // 'owner.idNo': 1,
+        // 'agent.name': 1,
+        // 'agent.idNo': 1,
+        // 'owner.tel': 1,
+        'feesAndDeductions': 1,
+        rvAfterFD: {
+          $subtract: [
+            {$cond: [
+              {$eq: ['$vehicle.residualValueBeforeFD', '']},
+              0,
+              '$vehicle.residualValueBeforeFD'
+            ]},
+            {$sum: {
+              $map: {
+                input: '$feesAndDeductions',
+                as: 'fd',
+                in: '$$fd.amount'
+              }
+            }}
+          ]
+        }
+      }},
+      {$match: {
+        rvAfterFD: {$ne: 0}
+      }},
+      { $sort : { entranceDate : -1 } }
+    ]).toArray();
+    return res.json(resultNotPaidNorProcessing);
+  }).catch((err) => {
+    return res.status(500).json(err.stack);
+  })
+}
+const rootGetPaymentToOwnerZeroRD = (req, res) => {
+  const facility = req.query.facility;
+  if (!facility) {
+    return res.status(400).json({
+      message: "insufficient parameters."
+    });
+  }
+
+  co(function*() {
+    const db = yield dbX.dbPromise;
+    const daysAgo = getDaysAgoDate(new Date(), 14);
+    let resultZeroRD = yield db.collection('vehicles').aggregate([
+      {$match: {
+        facility: facility,
+        entranceDate: {'$gte': `${daysAgo}`}
+      }},
+      {$project: {
+        'vin': 1,
+        'batchId': 1,
+        'facility': 1,
+        // 'entranceStatus': 1,
+        'entranceDate': 1,
+        // 'surveyRounds': 1,
+        // 'vtbmym': 1,
+        // 'estimatedSurveyDateFirst': 1,
+        // 'estimatedSurveyDateSecond': 1,
+        'status': 1,
+        'status2': 1,
+        'vehicle.plateNo': 1,
+        'vehicle.vehicleType': 1,
+        'vehicle.brand': 1,
+        // 'vehicle.model': 1,
+        // 'vehicle.color': 1,
+        // 'vehicle.engineNo': 1,
+        // 'vehicle.useCharacter': 1,
+        // 'vehicle.conditionOnEntrance': 1,
+        'vehicle.residualValueBeforeFD': 1,
+        // 'dismantling': 1,
+        // 'owner.name': 1,
+        // 'owner.address': 1,
+        // 'owner.idNo': 1,
+        // 'agent.name': 1,
+        // 'agent.idNo': 1,
+        // 'owner.tel': 1,
+        'feesAndDeductions': 1,
+        rvAfterFD: {
+          $subtract: [
+            {$cond: [
+              {$eq: ['$vehicle.residualValueBeforeFD', '']},
+              0,
+              '$vehicle.residualValueBeforeFD'
+            ]},
+            {$sum: {
+              $map: {
+                input: '$feesAndDeductions',
+                as: 'fd',
+                in: '$$fd.amount'
+              }
+            }}
+          ]
+        }
+      }},
+      {$match: {
+        rvAfterFD: {$eq: 0}
+      }},
+      { $sort : { entranceDate : -1 } }
+    ]).toArray();
+    return res.json(resultZeroRD);
+  }).catch((err) => {
+    return res.status(500).json(err.stack);
+  })
+}
+
+router.get('/', (req, res) => {
+  const queryParams = req.query;
+  const keys = Object.keys(queryParams);
+  if (!keys.length) {
+    return res.status(400).json({
+      message: "insufficient parameters."
+    });
+  }
+  // value of each queryParam has been JSON.stringify-ed at the frontend
+  keys.forEach(k => {
+    queryParams[k] = JSON.parse(queryParams[k]);
+  })
+  console.log(queryParams);
+  switch (true) {
+    case queryParams.title === 'payment-to-owner-ready':
+      return rootGetPaymentToOwnerReady(req, res);
+    case queryParams.title === 'payment-to-owner-zero-rd':
+      return rootGetPaymentToOwnerZeroRD(req, res);
+    default:
+      return rootGetDefault(req, res, queryParams, keys);
+  }
   // return res.json(req.user);
 })
 
