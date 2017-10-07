@@ -226,8 +226,8 @@ const rootPatch = (req, res) => {
       let batchResultPatch;
       if (vehicle.success) {
         batchResultPatch = [
-          {op: 'replace', path: `/paymentToOwner/done`, value: true},
-          {op: 'replace', path: `/paymentToOwner/date`, value: patchedAt}
+          {op: 'replace', path: `/status/paymentToOwner/done`, value: true},
+          {op: 'replace', path: `/status/paymentToOwner/date`, value: patchedAt}
         ]
       } else {
         batchResultPatch = [{op: 'remove', path: `/status2/paymentToOwnerBatchIds/0`}];
