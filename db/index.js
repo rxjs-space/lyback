@@ -2,7 +2,7 @@ const MongoClient = require('mongodb').MongoClient;
 const co = require('co');
 // const dbUrl = `mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_URL}`;
 let dbUrl;
-if (process.env.ENVIORNMENT === 'production') {
+if (process.env.ENVIRONMENT === 'production') {
   dbUrl = `mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_URL}`;
 } else {
   dbUrl = 'mongodb://127.0.0.1:27017/longyundb';
