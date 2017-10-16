@@ -3,8 +3,11 @@ const dbX = require('../../db');
 const getLastMondays = require('../../utils/last-mondays');
 
 const getDaysAgoDate = require('../../utils').getDaysAgoDate;
+const getRecentDates = require('../../utils').getRecentDates;
+const getLastMondayDates = require('../../utils').getLastMondayDates;
 
 module.exports = (req, res) => {
+  const now = new Date();
   co(function*() {
     const db = yield dbX.dbPromise;
     // const ttQueryResult = yield db.collection('tt').find({name: 'types'}).toArray();
@@ -34,6 +37,99 @@ module.exports = (req, res) => {
           orderType: r._id.orderType,
           vin: r._id.vin
         }));
+        break;
+      case req.query.title === 'inputDoneRecently':
+        const sevenDaysAgoDate = getDaysAgoDate(now, 7);
+        let recentSevenDays = yield db.collection('inventory').aggregate([
+          {$match: {
+            'inputDate': {$gte: new Date(`${sevenDaysAgoDate}T16:00:00.000Z`)}
+          }},
+          {$lookup: {
+            from: 'vtbmym',
+            localField: "vtbmym",
+            foreignField: "_id",
+            as: "vtbmym"
+          }},
+          {$unwind: '$vtbmym'},
+          {$group: {
+            _id: {
+              typeId: '$typeId',
+              vehicleType: '$vtbmym.vehicleType',
+              tab: {$dateToString: {format: '%Y-%m-%d', date: {$add: ['$inputDate', 1000 * 60 * 60 * 8]}}}
+            },
+            count: {$sum: 1}
+          }}
+        ]).toArray();
+        const processReport = (report) => {
+          let reportCopy = JSON.parse(JSON.stringify(report));
+          reportCopy = reportCopy.reduce((acc, curr) => {
+            const thatTab = curr._id.tab;
+            const thatTypeId = curr._id.typeId;
+            const thatVehicleType = curr._id.vehicleType;
+            const itemWithThatTab = acc.find(item => item.tab === thatTab);
+            if (itemWithThatTab) {
+              const iitemWithThatTypeId = itemWithThatTab.rows.find(iitem => iitem.typeId === thatTypeId);
+              if (iitemWithThatTypeId) {
+                iitemWithThatTypeId[thatVehicleType] = curr.count;
+              } else {
+                itemWithThatTab.rows.push({
+                  typeId: thatTypeId,
+                  [thatVehicleType]: curr.count
+                })
+              }
+              if (!itemWithThatTab.columns.find(c => c === thatVehicleType)) {
+                itemWithThatTab.columns.push(thatVehicleType);
+              }
+            } else {
+              acc.push({
+                tab: thatTab,
+                rows: [{
+                  typeId: thatTypeId,
+                  [thatVehicleType]: curr.count
+                }],
+                columns: [thatVehicleType]
+              });
+            }
+  
+            return acc;
+          }, []);
+          reportCopy.forEach(dateReport => {
+            dateReport.rows.sort((a, b) => a.typeId > b.typeId ? 1 : -1);
+            dateReport.columns.sort((a, b) => a > b ? 1 : -1);
+          })
+
+          return reportCopy;
+        }
+
+
+        const lastMondayDate = getLastMondayDates(1)[0];
+        const fiveWeeksAgoMondayDate = getDaysAgoDate(new Date(lastMondayDate), 29);
+        const dateBeginning = new Date(`${fiveWeeksAgoMondayDate}T16:00:00.000Z`);
+        let recentFiveWeeks = yield db.collection('inventory').aggregate([
+          {$match: {
+            'inputDate': {$gte: dateBeginning}
+          }},
+          {$lookup: {
+            from: 'vtbmym',
+            localField: "vtbmym",
+            foreignField: "_id",
+            as: "vtbmym"
+          }},
+          {$unwind: '$vtbmym'},
+          {$group: {
+            _id: {
+              typeId: '$typeId',
+              vehicleType: '$vtbmym.vehicleType',
+              tab: {$dateToString: {format: '%V', date: {$add: ['$inputDate', 1000 * 60 * 60 * 8]}}}
+            },
+            count: {$sum: 1}
+          }}          
+        ]).toArray();
+
+        result = {
+          recentSevenDays: processReport(recentSevenDays),
+          recentFiveWeeks: processReport(recentFiveWeeks),
+        }
         break;
       case req.query.title === 'inputDone':
         const days = req.query.days * 1;

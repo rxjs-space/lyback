@@ -1,9 +1,19 @@
+const moment = require('moment');
+
 const onedayMS = 1000 * 60 * 60 * 24;
 
 exports.strContains = (string, search) => {
   return string.indexOf(search) > -1;
 }
 
+exports.getMondayOfTheWeek = (weekNumber) => {
+  const currentBeijingTime = new Date(Date.parse(new Date()) + 1000 * 60 * 60 * 8);
+  const currentWeekNumber = moment(currentBeijingTime).isoWeeks();
+  const currentYear = currentBeijingTime.getFullYear();
+  const year = (currentWeekNumber < weekNumber) ? (currentYear -  1) : currentYear;
+  const mondayHalfDone = moment().isoWeekday('Monday').year(year).week(weekNumber).toDate();
+  return new Date(Date.parse(mondayHalfDone.toISOString().substring(0, 10)) - 1000 * 60 * 60 * 8);
+}
 
 exports.getDaysAgoDate = (startDay, days) => {
   // startDay = new Date();
@@ -19,6 +29,23 @@ exports.calculateBeijingDateShort = (ISODateString) => {
   return beijingDate.toISOString().slice(0, 10);
 }
 
+exports.getRecentDates = (countFromDay, days) => {
+  const recentDates = [];
+  for (let i = 0; i < days; i++) {
+    recentDates.unshift(this.getDaysAgoDate(countFromDay, i));
+  }
+  return recentDates;
+}
+
+exports.getRecentWeekNumbers = (countFromDay, weeks) => {
+  const beijingTimeNow = new Date(Date.parse(countFromDay) + 1000 * 60 * 60 * 8);
+  const recentWeekNumbers = [];
+  for (let i = 0; i < weeks; i++) {
+    const beijingTimeThen = new Date(Date.parse(beijingTimeNow) - i * 1000 * 60 * 60 * 24 * 7);
+    recentWeekNumbers.unshift(moment(beijingTimeThen).isoWeeks());
+  }
+  return recentWeekNumbers;
+}
 
 exports.getLastMondayDates = (count = 10, timeZoneOffset = 8) => {
   const today = new Date();

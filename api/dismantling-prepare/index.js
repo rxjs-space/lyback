@@ -17,7 +17,7 @@ const rootGet = (req, res) => {
     let queryResult;
     switch (true) {
       case req.query.recentOnly && JSON.parse(req.query.recentOnly):
-        const sevenDaysAgoBeijingZeroHours = `${getDaysAgoDate(new Date(), 8)}T16:00:00.000Z`;
+        const sevenDaysAgoBeijingZeroHours = new Date(`${getDaysAgoDate(new Date(), 8)}T16:00:00.000Z`);
         console.log(sevenDaysAgoBeijingZeroHours);
         // get all batches which is created after sevenDaysAgoBeijingZero
         queryResult = yield db.collection('dismantlingPrepareBatches').aggregate([
@@ -81,9 +81,11 @@ const rootPost = (req, res) => {
     const vehicles = req.body.vehicleIds.map(id => ({
       vehicleId: new ObjectID(id)
     }));
+    const createdAt = new Date();
     const newBatch = {
       vehicles,
-      createdAt: (new Date()).toISOString(),
+      completed: true, // no more ops needed, all d-prepare batch completes on creation
+      createdAt,
       createdBy: req.user._id
     };
 

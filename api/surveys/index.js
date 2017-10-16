@@ -330,17 +330,20 @@ const rootGet = (req, res) => {
         return res.json(progressingBatches);
       case 'recentCompletedBatches': // completedAt within 5 weeks
         const thirtyFiveDaysAgoDate = getDaysAgoDate(new Date(), 35);
-        const recentCompletedBatches = yield db.collection('surveyBatches').find({$or: [
-          {
-            completed: true,
-            completedAt: {'$gte': `${thirtyFiveDaysAgoDate}T16:00:00.000Z`}
-          },
-          {
-            completed: true,
-            completedAt: {$exists: false},
-            modifiedAt: {'$gte': `${thirtyFiveDaysAgoDate}T16:00:00.000Z`}
-          },
-        ]}).toArray();
+        const recentCompletedBatches = yield db.collection('surveyBatches')
+          .find({$or: [
+            {
+              completed: true,
+              completedAt: {'$gte': `${thirtyFiveDaysAgoDate}T16:00:00.000Z`}
+            },
+            {
+              completed: true,
+              completedAt: {$exists: false},
+              modifiedAt: {'$gte': `${thirtyFiveDaysAgoDate}T16:00:00.000Z`}
+            },
+          ]})
+          .sort({'createdAt': -1})
+          .toArray();
         return res.json(recentCompletedBatches);
     }
 

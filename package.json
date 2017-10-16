@@ -19,6 +19,7 @@
     "express": "^4.15.3",
     "jsonpatch-to-mongodb": "^0.4.0",
     "jwt-simple": "^0.5.1",
+    "moment": "^2.19.1",
     "mongodb": "^2.2.31",
     "nodemailer": "^4.0.1",
     "passport": "^0.3.2",

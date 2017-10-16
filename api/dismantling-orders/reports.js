@@ -1,9 +1,13 @@
 const co = require('co');
+
 const dbX = require('../../db');
 const getLastSundays = require('../../utils/last-sundays');
 const getTenDaysAgo = require('../../utils/ten-days-ago');
 const getDaysAgoDate = require('../../utils').getDaysAgoDate;
+const getRecentDates = require('../../utils').getRecentDates;
+const getRecentWeekNumbers = require('../../utils').getRecentWeekNumbers;
 const calculateBeijingDateShort = require('../../utils').calculateBeijingDateShort;
+const getLastMondayDates = require('../../utils').getLastMondayDates;
 
 const startDay = (new Date());
 const onedayMS = 1000 * 60 * 60 * 24;
@@ -20,6 +24,96 @@ module.exports = (req, res) => {
     const db = yield dbX.dbPromise;
 
     switch (req.query.title) {
+      case 'dismantled':
+        const now = new Date();
+        const sevenDaysAgoDate = getDaysAgoDate(now, 7);
+
+        let recentSevenDays = yield db.collection('vehicles').aggregate([
+          {$match: {
+            'status2.dismantlingOrderId': {$ne: ''},
+            'status.dismantled.done': true,
+            'status.dismantled.date': {$gte: new Date(`${sevenDaysAgoDate}T16:00:00.000Z`)},
+            'metadata.isDeleted': false,
+          }},
+          {$project: {
+            'vehicleType': '$vehicle.vehicleType',
+            'dismantledAtBeijingTime': {$add: ['$status.dismantled.date', 1000 * 60 * 60 * 8]}
+          }},
+          {$group: {
+            _id: {
+              vehicleType: '$vehicleType',
+              dismantledAtBeijingDate: {$dateToString: {format: '%Y-%m-%d', date: '$dismantledAtBeijingTime'}}
+            },
+            count: {$sum: 1}
+          }},
+        ]).toArray();
+
+        recentSevenDays = recentSevenDays.reduce((acc, curr) => {
+          const currDate = curr._id.dismantledAtBeijingDate;
+          const thatItem = {
+            vehicleType: curr._id.vehicleType,
+            [currDate]: curr.count
+          };
+          acc.push(thatItem);
+          const subtotalItemInAcc = acc.find(item => item.vehicleType === 'subtotal');
+          if (subtotalItemInAcc[currDate]) {
+            subtotalItemInAcc[currDate] += curr.count;
+          } else {
+            subtotalItemInAcc[currDate] = curr.count;
+          }
+          return acc;
+        }, [{vehicleType: 'subtotal'}]);
+
+        const lastMondayDate = getLastMondayDates(1)[0];
+        const fiveWeeksAgoMondayDate = getDaysAgoDate(new Date(lastMondayDate), 29);
+        const dateBeginning = new Date(`${fiveWeeksAgoMondayDate}T16:00:00.000Z`);
+        let recentFiveWeeks = yield db.collection('vehicles').aggregate([
+          {$match: {
+            'status2.dismantlingOrderId': {$ne: ''},
+            'status.dismantled.done': true,
+            'status.dismantled.date': {$gte: dateBeginning},
+            'metadata.isDeleted': false,
+          }},
+          {$project: {
+            vehicleType: '$vehicle.vehicleType',
+            'dismantledAtBeijingTime': {$add: ['$status.dismantled.date', 1000 * 60 * 60 * 8]}
+          }},
+          {$group: {
+            _id: {
+              vehicleType: '$vehicleType',
+              dismantledAtBeijingWeek: {$dateToString: {format: '%V', date: '$dismantledAtBeijingTime'}}
+            },
+            count: {$sum: 1}
+          }},
+        ]).toArray();
+
+        recentFiveWeeks = recentFiveWeeks.reduce((acc, curr) => {
+          const currWeek = curr._id.dismantledAtBeijingWeek
+          const thatItem = {
+            vehicleType: curr._id.vehicleType,
+            [currWeek]: curr.count      
+          };
+          acc.push(thatItem);
+          const subtotalItemInAcc = acc.find(item => item.vehicleType === 'subtotal');
+          if (subtotalItemInAcc[currWeek]) {
+            subtotalItemInAcc[currWeek] += curr.count;
+          } else {
+            subtotalItemInAcc[currWeek] = curr.count;
+          }
+          return acc;
+        }, [{vehicleType: 'subtotal'}]);
+
+        result = {
+          reports: {
+            recentSevenDays,
+            recentFiveWeeks
+          },
+          columns: {
+            recentSevenDays: getRecentDates(now, 7),
+            recentFiveWeeks: getRecentWeekNumbers(now, 5)
+          }
+        }
+        break;
       case 'operational':
         let resultIdle = yield db.collection('vehicles').aggregate([
           {'$match': {

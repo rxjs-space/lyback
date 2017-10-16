@@ -4,6 +4,7 @@ const toMongodb = require('jsonpatch-to-mongodb');
 const ObjectID = require('mongodb').ObjectID;
 
 const strContains = require('../../utils').strContains;
+const getMondayOfTheWeek = require('../../utils').getMondayOfTheWeek;
 const dbX = require('../../db');
 const getLastSundays = require('../../utils/last-sundays');
 const getLastMondays = require('../../utils/last-mondays');
@@ -216,6 +217,23 @@ const rootGetDefault = (req, res, queryParams, keys) => {
     // turn req.query into dbQuery
     for (let k of keys) {
       switch (k) {
+        case 'status.dismantled.week':
+          const weekNumber = queryParams['status.dismantled.week'];
+          const thatMonday = getMondayOfTheWeek(weekNumber);
+          const nextMonday = new Date(Date.parse(thatMonday) + 1000 * 60 * 60 * 24 * 7);
+          dbQuery['status.dismantled.done'] = true;
+          dbQuery['status.dismantled.date'] = {
+            $gte: thatMonday,
+            $lt: nextMonday
+          };
+          break;
+        case 'status.dismantled.date':
+          dbQuery['status.dismantled.done'] = true;
+          dbQuery['status.dismantled.date'] = {
+            $gte: new Date(queryParams['status.dismantled.date']['$gte']),
+            $lt: new Date(queryParams['status.dismantled.date']['$lt'])
+          };
+          break;
         case 'entranceWeek':
           dbQuery = basedOnEntranceWeek[queryParams[k]](dbQuery, getLastSundays());
           break;
@@ -251,6 +269,7 @@ const rootGetDefault = (req, res, queryParams, keys) => {
       'vehicle.model': 1,
       'vehicle.color': 1,
       'vehicle.engineNo': 1,
+      'vehicle.curbWeightKG': 1,
       'vehicle.useCharacter': 1,
       'vehicle.conditionOnEntrance': 1,
       'vehicle.residualValueBeforeFD': 1,
