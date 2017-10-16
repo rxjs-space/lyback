@@ -57,7 +57,9 @@ module.exports = (req, res) => {
               vehicleType: '$vtbmym.vehicleType',
               tab: {$dateToString: {format: '%Y-%m-%d', date: {$add: ['$inputDate', 1000 * 60 * 60 * 8]}}}
             },
-            count: {$sum: 1}
+            count: {$sum: {$cond: [
+              {$eq: [{$substr: ['$typeId', 0, 1] }, 'w']}, '$quantity', 1 // if it's 'waste', use quantiy field
+            ]}}
           }}
         ]).toArray();
         const processReport = (report) => {
@@ -122,7 +124,9 @@ module.exports = (req, res) => {
               vehicleType: '$vtbmym.vehicleType',
               tab: {$dateToString: {format: '%V', date: {$add: ['$inputDate', 1000 * 60 * 60 * 8]}}}
             },
-            count: {$sum: 1}
+            count: {$sum: {$cond: [
+              {$eq: [{$substr: ['$typeId', 0, 1] }, 'w']}, '$quantity', 1 // if it's 'waste', use quantiy field
+            ]}}
           }}          
         ]).toArray();
 

@@ -389,9 +389,28 @@ const insertInventoryAndUpdateDismantlingOrder = (db, updatedDismantlingOrder, r
       const pws = patchesForAddingPWs.reduce((acc, curr) => {
         // const typeId = Object.keys(curr.value)[0];
         const typeId = curr.path.split('/')[2];
-        // unwind items with productionCount more than 1
-        // for (let i = 0; i < curr.value[typeId].productionCount; i++) {
-        for (let i = 0; i < curr.value.productionCount; i++) {
+        
+        if (typeId.indexOf('p') > -1) {
+          // unwind 'part' items with productionCount more than 1
+          for (let i = 0; i < curr.value.productionCount; i++) {
+            const newIventoryItem = {
+              vehicleId: updatedDismantlingOrder.vehicleId,
+              vtbmym: updatedDismantlingOrder.vtbmym,
+              typeId,
+              inputDate: patchedAt,
+              isInStock: true,
+              isReadyForSale: true,
+              outputTo: '',
+              outputDate: '',
+              outputRef: '',
+              createdAt: patchedAt,
+              createdBy: patchedBy,
+              source: 'dismantling'
+            };
+            acc = [...acc, newIventoryItem];
+          }
+        } else {
+          // record count for 'waste' item
           const newIventoryItem = {
             vehicleId: updatedDismantlingOrder.vehicleId,
             vtbmym: updatedDismantlingOrder.vtbmym,
@@ -399,6 +418,7 @@ const insertInventoryAndUpdateDismantlingOrder = (db, updatedDismantlingOrder, r
             inputDate: patchedAt,
             isInStock: true,
             isReadyForSale: true,
+            quantity: curr.value.productionCount,
             outputTo: '',
             outputDate: '',
             outputRef: '',
