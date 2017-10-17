@@ -22,6 +22,40 @@ module.exports = (req, res) => {
     let result;
 
     switch (true) {
+      case req.query.title === 'byBrands':
+        let resultByBrands = yield db.collection('vehicles').aggregate([
+          {$match: {
+            'metadata.isDeleted': false
+          }},
+          {$group: {
+            _id: {
+              'brand': '$vehicle.brand',
+            },
+            count: {$sum: 1}
+          }}
+        ]).toArray();
+        result = resultByBrands.map(r => ({
+          brand: r._id.brand,
+          count: r.count
+        }));
+        break;
+      case req.query.title === 'byBatches':
+        let resultByBatches = yield db.collection('vehicles').aggregate([
+          {$match: {
+            'metadata.isDeleted': false
+          }},
+          {$group: {
+            _id: {
+              'batch': '$batchId',
+            },
+            count: {$sum: 1}
+          }}
+        ]).toArray();
+        result = resultByBatches.map(r => ({
+          batch: r._id.batch,
+          count: r.count
+        }));
+        break;
       case req.query.title === 'mofcom':
         let resultMofcomIdle = yield db.collection('vehicles').aggregate([
           {$match: {

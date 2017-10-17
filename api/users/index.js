@@ -113,7 +113,14 @@ router.post('/', (req, res) => {
       facility: req.body.facility,
       department: req.body.department
     }
-    const insertFeedback = yield db.collection('users').insertOne(itemToInsert);
+    const insertResult = yield db.collection('users').insertOne(itemToInsert);
+    const updateVersionResult = yield db.collection('versions').updateOne({
+      collection: 'users'
+    }, {
+      '$set': {version: `${(new Date()).toISOString().substring(0, 10)}:${Math.random()}`}
+    }, {
+      upsert: true
+    });
     // mongodb driver will add _id to itemToInsert after above ops
     const aclInstance = yield myAcl.aclInstancePromise;
     const aclResult = yield aclInstance.addUserRoles(itemToInsert._id.toHexString(), roles)

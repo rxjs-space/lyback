@@ -45,16 +45,23 @@ module.exports = (req, res) => {
             'inputDate': {$gte: new Date(`${sevenDaysAgoDate}T16:00:00.000Z`)}
           }},
           {$lookup: {
-            from: 'vtbmym',
-            localField: "vtbmym",
-            foreignField: "_id",
-            as: "vtbmym"
+            from: 'vehicles',
+            localField: 'vehicleId',
+            foreignField: '_id',
+            as: 'vehicle'
           }},
-          {$unwind: '$vtbmym'},
+          {$unwind: '$vehicle'},
+          // {$lookup: {
+          //   from: 'vtbmym',
+          //   localField: "vtbmym",
+          //   foreignField: "_id",
+          //   as: "vtbmym"
+          // }},
+          // {$unwind: '$vtbmym'},
           {$group: {
             _id: {
               typeId: '$typeId',
-              vehicleType: '$vtbmym.vehicleType',
+              vehicleType: '$vehicle.vehicle.vehicleType',
               tab: {$dateToString: {format: '%Y-%m-%d', date: {$add: ['$inputDate', 1000 * 60 * 60 * 8]}}}
             },
             count: {$sum: {$cond: [
@@ -112,16 +119,23 @@ module.exports = (req, res) => {
             'inputDate': {$gte: dateBeginning}
           }},
           {$lookup: {
-            from: 'vtbmym',
-            localField: "vtbmym",
-            foreignField: "_id",
-            as: "vtbmym"
+            from: 'vehicles',
+            localField: 'vehicleId',
+            foreignField: '_id',
+            as: 'vehicle'
           }},
-          {$unwind: '$vtbmym'},
+          {$unwind: '$vehicle'},
+          // {$lookup: {
+          //   from: 'vtbmym',
+          //   localField: "vtbmym",
+          //   foreignField: "_id",
+          //   as: "vtbmym"
+          // }},
+          // {$unwind: '$vtbmym'},
           {$group: {
             _id: {
               typeId: '$typeId',
-              vehicleType: '$vtbmym.vehicleType',
+              vehicleType: '$vehicle.vehicle.vehicleType',
               tab: {$dateToString: {format: '%V', date: {$add: ['$inputDate', 1000 * 60 * 60 * 8]}}}
             },
             count: {$sum: {$cond: [
