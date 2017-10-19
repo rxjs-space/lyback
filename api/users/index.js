@@ -9,15 +9,33 @@ const dbX = require('../../db');
 
 const saltRounds = 10;
 
+/* 
+  GET /
+  return only users of the same facility as for req.user
+  if req.user.facility === 'f000', return all the users
+*/
 router.get('/', (req, res) => {
+  // co(function*() {
+  //   const db = yield dbX.dbPromise;
+  //   const userList = yield db.collection('users').find({}, {password: 0}).toArray();
+  //   res.json(userList);
+  // }).catch(function(err) {
+  //   return res.status(500).json(err.stack);
+  // });
+
   co(function*() {
     const db = yield dbX.dbPromise;
-    const userList = yield db.collection('users').find({}, {password: 0}).toArray();
-    res.json(userList);
+    const query = req.user.facility === 'f000' ?
+      {} :
+      {facility: req.user.facility};
+    const users = yield db.collection('users').find(query, {username: 1, displayName: 1}).toArray();
+    res.json(users);
   }).catch(function(err) {
     return res.status(500).json(err.stack);
   });
-  // res.send('ok');
+  // res.json(req.user);
+
+
 })
 
 router.get('/one', (req, res) => {

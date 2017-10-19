@@ -16,6 +16,123 @@ module.exports = (req, res) => {
     let result;
 
     switch (true) {
+      case req.query.title === 'inStockCount':
+        let inStockCount = yield db.collection('inventory').aggregate([
+          {$match: {
+            'isInStock': true,
+            'typeId': {$regex: '^p.*'}
+          }},
+          {$lookup: {
+            from: 'vehicles',
+            localField: 'vehicleId',
+            foreignField: '_id',
+            as: 'vehicle'
+          }},
+          {$unwind: '$vehicle'},
+          // {$lookup: {
+          //   from: 'vtbmym',
+          //   localField: "vtbmym",
+          //   foreignField: "_id",
+          //   as: "vtbmym"
+          // }},
+          // {$unwind: '$vtbmym'},
+          {$group: {
+            _id: {
+              typeId: '$typeId',
+              vehicleType: '$vehicle.vehicle.vehicleType',
+            },
+            count: {$sum: 1}
+          }}
+        ]).toArray();
+        // result = inStockCount;
+        result = inStockCount.reduce((acc, curr) => {
+          const currTab = curr._id.vehicleType;
+          const itemWithCurrTab = acc.find(item => item.tab === currTab);
+          if (itemWithCurrTab) {
+            itemWithCurrTab['data'][curr._id.typeId] = curr.count;
+          } else {
+            acc.push({
+              tab: currTab,
+              data: {
+                [curr._id.typeId]: curr.count
+              }
+            })
+          }
+          return acc;
+        }, []);
+        break;
+      case req.query.title === 'inStockAmount':
+        let inStockAmount = yield db.collection('inventory').aggregate([
+          {$match: {
+            'isInStock': true,
+            'typeId': {$regex: '^p.*'}
+          }},
+          {$lookup: {
+            from: 'vehicles',
+            localField: 'vehicleId',
+            foreignField: '_id',
+            as: 'vehicle'
+          }},
+          {$unwind: '$vehicle'},
+          {$lookup: {
+            from: 'prices',
+            localField: 'typeId',
+            foreignField: 'id',
+            as: 'pwTypePrice'
+          }},
+          {$unwind: '$pwTypePrice'},
+          {$lookup: {
+            from: 'prices',
+            localField: 'vehicle.vehicle.vehicleType',
+            foreignField: 'id',
+            as: 'vehicleTypePrice'
+          }},
+          {$unwind: {
+            path: '$vehicleTypePrice',
+            preserveNullAndEmptyArrays: true
+          }},
+          // {$project: {
+          //   'pwTypePrice': 1,
+          //   'vehicleTypePrice': 1
+          // }}
+          {$group: {
+            _id: {
+              typeId: '$typeId',
+              vehicleType: '$vehicle.vehicle.vehicleType',
+            },
+            count: {$sum: 1},
+            amount: {$sum: {$multiply: [
+              '$pwTypePrice.number', {$add: [1, {$cond: [
+                {$gt: ['$vehicleTypePrice', null]},
+                {$divide: ['$vehicleTypePrice.number', 100]},
+                0
+              ]}]}
+            ]}}
+          }}
+        ]).toArray();
+        // result = inStockAmount;
+        result = inStockAmount.reduce((acc, curr) => {
+          const currTab = curr._id.vehicleType;
+          const itemWithCurrTab = acc.find(item => item.tab === currTab);
+          if (itemWithCurrTab) {
+            itemWithCurrTab['data'][curr._id.typeId] = {
+              count: curr.count,
+              amount: curr.amount
+            };
+          } else {
+            acc.push({
+              tab: currTab,
+              data: {
+                [curr._id.typeId]: {
+                  count: curr.count,
+                  amount: curr.amount
+                }
+              }
+            })
+          }
+          return acc;
+        }, []);
+        break;
       case req.query.title === 'inputReady':
         let resultInputReady = yield db.collection('dismantlingOrders').aggregate([
           {$match: {$or: [
