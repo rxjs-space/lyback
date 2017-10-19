@@ -1,7 +1,7 @@
 const passport = require("passport");  
 const passportJWT = require("passport-jwt");
 const co = require('co');
-const ObjectId = require('mongodb').ObjectID;
+const ObjectID = require('mongodb').ObjectID;
 
 const dbX = require('../db');
 const users = [
@@ -27,7 +27,7 @@ module.exports = function() {
     co(function*() {
       const db = yield dbX.dbPromise;
       // const db = dbX.db;
-      const userFound = yield db.collection('users').findOne({_id: new ObjectId(payload.sub._id)});
+      const userFound = yield db.collection('users').findOne({_id: new ObjectID(payload.sub._id)});
       // const expired = Math.ceil(Date.now() / 1000) >= payload.exp*1;
       if (!userFound) return done(null, false, {name: 'UserNotFoundError', message: `No such user as ${payload.sub.username}.`});
       // if (expired) return done(null, false, {err: 'Token Expired', message: `The token has expired. Please login again.`});

@@ -50,6 +50,7 @@ router.post('/', function(req, res) {
     return res.json({
       token,
       displayName: userFound.displayName, // when including displayName in the token, the atob result is messy for Chinese characters
+      settings: userFound.settings
     })
 
   }).catch(function(err) {

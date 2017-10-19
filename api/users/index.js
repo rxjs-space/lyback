@@ -3,6 +3,8 @@ const bcrypt = require('bcrypt');
 const jwt = require("jwt-simple"); 
 const co = require('co');
 const ObjectID = require('mongodb').ObjectID;
+const toMongodb = require('jsonpatch-to-mongodb');
+
 const myAcl = require('../../my-acl');
 
 const dbX = require('../../db');
@@ -36,6 +38,51 @@ router.get('/', (req, res) => {
   // res.json(req.user);
 
 
+})
+
+router.patch('/one', (req, res) => {
+  // a user can edit its own record
+  // a admin can edit all the records
+  const editorUserId = req.user._id; // this is an ObjectID instance
+  const targetUserId = req.query._id; // this is a string
+  if (!targetUserId) {
+    return res.status(400).json({
+      message: "insufficient parameters."
+    })
+  }
+  if (!req.body || !req.body.patches) {
+    return res.status(400).json({
+      message: 'no data provided.'
+    })
+  }
+
+  const sameUser = JSON.stringify(editorUserId) === JSON.stringify(targetUserId);
+  co(function*() {
+    const db = yield dbX.dbPromise;
+
+    let canPatch = sameUser;
+    if (!canPatch) { // check if editor is admin
+      const aclInstance = yield myAcl.aclInstancePromise;
+      canPatch = yield aclInstance.hasRole(JSON.parse(JSON.stringify(editorUserId)), 'admin');
+    }
+    if (!canPatch) {
+      return res.status(401).json({error: 'not authorized'});
+    } else {
+      console.log('patches', req.body.patches);
+      const patchesToApply = toMongodb(req.body.patches);
+      console.log('patchesToApply', patchesToApply);
+      const patchResult = yield db.collection('users').updateOne(
+        {_id: new ObjectID(targetUserId)},
+        patchesToApply
+      );
+      res.json(patchResult);
+    }
+  }).catch(err => {
+    return res.status(500).json(err.stack);
+  })
+
+
+  // res.json({editorUserId, targetUserId, sameUser})
 })
 
 router.get('/one', (req, res) => {
