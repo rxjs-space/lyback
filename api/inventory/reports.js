@@ -115,23 +115,40 @@ module.exports = (req, res) => {
           const currTab = curr._id.vehicleType;
           const itemWithCurrTab = acc.find(item => item.tab === currTab);
           if (itemWithCurrTab) {
-            itemWithCurrTab['data'][curr._id.typeId] = {
+            itemWithCurrTab.data.push({
+              typeId: curr._id.typeId,
               count: curr.count,
               amount: curr.amount
-            };
+            })
           } else {
             acc.push({
               tab: currTab,
-              data: {
-                [curr._id.typeId]: {
-                  count: curr.count,
-                  amount: curr.amount
-                }
-              }
+              data: [{
+                typeId: curr._id.typeId,
+                count: curr.count,
+                amount: curr.amount
+              }]
             })
           }
+          // add to tab-total
+          const totalTab = acc.find(item => item.tab === 'total');
+          const totalData = totalTab.data;
+          const totalDataThatType = totalData.find(iitem => iitem.typeId === curr._id.typeId);
+          if (totalDataThatType) {
+            totalDataThatType.count += curr.count,
+            totalDataThatType.amount += curr.amount
+          } else {
+            totalData.push({
+              typeId: curr._id.typeId,
+              count: curr.count,
+              amount: curr.amount
+            });
+          }
           return acc;
-        }, []);
+        }, [{
+          tab: 'total',
+          data: []
+        }]);
         break;
       case req.query.title === 'inputReady':
         let resultInputReady = yield db.collection('dismantlingOrders').aggregate([
