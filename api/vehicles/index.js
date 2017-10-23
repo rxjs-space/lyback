@@ -38,6 +38,24 @@ const basedOnEntranceMonday = (entranceMonday, dbQuery, lastMondays) => {
   return dbQuery;
 }
 
+const preparePatches = (originalPatches) => {
+  const patches = JSON.parse(JSON.stringify(originalPatches));
+  const registrationDatePatch = patches.find(patch => patch.path.indexOf('registrationDate') > -1);
+  console.log(registrationDatePatch);
+  if (registrationDatePatch) {
+    registrationDatePatch.value = new Date(registrationDatePatch.value);
+  }
+  console.log(registrationDatePatch);
+  return patches;
+}
+
+const prepareNewVehicle = (originalNewVehicle) => {
+  const newVehicle = JSON.parse(JSON.stringify(originalNewVehicle));
+  if (newVehicle.vehicle.registrationDate) {
+    newVehicle.vehicle.registrationDate = new Date(newVehicle.vehicle.registrationDate);
+  }
+  return newVehicle;
+}
 
 const getVtbmymIdPromise = (db, patches, newVehicle) => {
   return new Promise((resolve, reject) => {
@@ -134,6 +152,7 @@ const createPreDismantlingOrderPromise = (db, vehicle) => {
 }
 
 
+
 router.post('/', (req, res) => {
   if (!req.body) {
     return res.status(400).json({
@@ -151,8 +170,8 @@ router.post('/', (req, res) => {
 
   co(function*() {
     const db = yield dbX.dbPromise;
-    const newVehicle = req.body.vehicle;
-    const patches = {patches: req.body.patches};
+    const newVehicle = prepareNewVehicle(req.body.vehicle);
+    const patches = {patches: preparePatches(req.body.patches)};
     newVehicle.createdAt = (new Date()).toISOString();
     newVehicle.createdBy = req.user._id;
     patches.createdAt = newVehicle.createdAt;
@@ -166,8 +185,6 @@ router.post('/', (req, res) => {
       newVehicle.vtbmym = vtbmymId;
       vtbmymPatch.value = vtbmymId;
     }
-
-
 
     const patchResult = yield db.collection('vehiclePatches').insert(patches);
     console.log('patches inserted');
@@ -580,7 +597,7 @@ router.patch('/one', (req, res) => {
       {op: 'replace', path: '/modifiedAt', value: patchedAt},
       {op: 'replace', path: '/modifiedBy', value: req.user._id}
     )
-    const patches = {patches: req.body.patches};
+    const patches = {patches: preparePatches(req.body.patches)};
     patches.createdAt = patchedAt;
     patches.createdBy = req.user._id;
     patches.vin = vin;

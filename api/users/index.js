@@ -29,7 +29,7 @@ router.get('/', (req, res) => {
     const db = yield dbX.dbPromise;
     const query = req.user.facility === 'f000' ?
       {} :
-      {facility: req.user.facility};
+      {facility: {$in: [req.user.facility, 'f000']}};
     const users = yield db.collection('users').find(query, {username: 1, displayName: 1}).toArray();
     res.json(users);
   }).catch(function(err) {

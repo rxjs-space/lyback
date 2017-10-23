@@ -74,7 +74,7 @@ mongodump --host ds161960.mlab.com -d longyundb --port 61960 --username timliu -
 
 
 
-mongodump --host ds161960.mlab.com -d longyundb --port 61960 --username timliu --password 2858880 --out dump-20171020-0915
+mongodump --host ds161960.mlab.com -d longyundb --port 61960 --username timliu --password 2858880 --out dump-20171023-0725
 
 
 mongorestore --host ds054289.mlab.com -d longyundb --port 54289 --username timliu --password 2858880 dump-20170817-0915/

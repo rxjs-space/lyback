@@ -2,10 +2,25 @@ const router = require('express').Router();
 const jwt = require("jwt-simple"); 
 const co = require('co');
 const coForEach = require('co-foreach');
+const ObjectID = require('mongodb').ObjectID;
+
 const myAcl = require('../../my-acl');
 
 const dbX = require('../../db');
-
+prepareId = (group, patch) => {
+  let id;
+  switch(group) {
+    case 'age':
+      id = patch.path.split('/')[1] * 1;
+      break;
+    // case 'brand':
+    //   id = new ObjectID(patch.path.split('/')[1]);
+    //   break;
+    default:
+      id = patch.path.split('/')[1];
+  }
+  return id;
+}
 const upsertPrices = (data, req, res) => {
   const group = data.group;
   const patches = data.patches;
@@ -14,12 +29,7 @@ const upsertPrices = (data, req, res) => {
     message: 'Insufficient data provided.'
   })}
   console.log(data);
-  switch (group) {
-    case 'pw':
-    case 'vt':
-    case 'brand':
-    case 'age':
-      // patches: [ { op: 'replace', path: '/p002/number', value: 1 } ]
+    // patches: [ { op: 'replace', path: '/p002/number', value: 1 } ]
       
       co(function*() {
         const db = yield dbX.dbPromise;
@@ -27,7 +37,7 @@ const upsertPrices = (data, req, res) => {
         const userId = req.user._id
         const dbOps = patches.map(p => ({
           updateOne: {
-            filter: {group, id: p.path.split('/')[1]},
+            filter: {group, id: prepareId(group, p)},
             update: {
               $set: {
                 number: p.value,
@@ -67,10 +77,7 @@ const upsertPrices = (data, req, res) => {
           error: error.stack,
         });
       });
-      break;
-    default:
-      res.json({ok: true, op: 'nothing'})
-  }
+
 }
 
 router.post('/', function(req, res) {

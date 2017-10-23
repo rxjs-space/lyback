@@ -4,3 +4,7 @@ db.vehicles.updateMany({'status.dismantlingPrepare.done': true, 'status.dismantl
 clear dismantlingOrders, dismantlingOrderPatches, inventory, inventoryPatches
 
 db.dismantlingPrepareBatches.updateMany({}, {$set: {completed: true}})
+
+#2017123
+> var cursor = db.vehicles.find({"vehicle.registrationDate": {"$exists": true, "$type": 2}});
+> while (cursor.hasNext()) {var doc = cursor.next(); db.vehicles.update({"_id": doc._id}, {"$set": {"vehicle.registrationDate": new ISODate(doc.vehicle.registrationDate)}});}

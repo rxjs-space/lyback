@@ -11,6 +11,133 @@ router.get('/', (req, res) => {
 });
 
 router.post('/query', (req, res) => {
+  // todo: add user.role checking, so to decide whether to return price info
+
+  if (!req.body) {
+    res.status(400).json({
+      ok: false,
+      message: 'no query params provided'
+    });
+  }
+  const queryParams = JSON.parse(JSON.stringify(req.body));
+  console.log(queryParams);
+  const processedQueryParams = Object.keys(queryParams).reduce((acc, curr) => {
+    switch(curr) {
+      case 'brand':
+      case 'vehicleType':
+        acc[`vehicle.vehicle.${curr}`] = queryParams[curr];
+        break;
+      default:
+        acc[curr] = queryParams[curr];
+    }
+    return acc;
+  }, {});
+  co(function*() {
+    const db = yield dbX.dbPromise;
+    const queryResult = yield db.collection('inventory').aggregate([
+      {$lookup: {
+        from: 'vehicles',
+        localField: 'vehicleId',
+        foreignField: '_id',
+        as: 'vehicle'
+      }},
+      {$unwind: '$vehicle'},
+      {$match: processedQueryParams},
+      // 可售
+      // 回用件名称
+      // 车辆类型
+      // 品牌
+      // 车龄
+      // 价格
+      // 数量
+      {$project: {
+        'isInStock': 1,
+        'isReadyForSale': 1,
+        'typeId': 1,
+        'vehicleType': '$vehicle.vehicle.vehicleType',
+        'brand': '$vehicle.vehicle.brand',
+        'model': '$vehicle.vehicle.model',
+        'vehicleId': '$vehicle._id',
+        // 'year': {$year: '$vehicle.vehicle.registrationDate'},
+        'age': {$floor: {$divide: [{$subtract: [
+          new Date(),
+          '$vehicle.vehicle.registrationDate'          
+        ]}, 1000 * 60 * 60 * 24 * 365]}},
+      }},
+      {$lookup: {
+        from: 'prices',
+        localField: 'age',
+        foreignField: 'id',
+        as: 'priceAge'
+      }},
+      {$unwind: {
+        path: '$priceAge',
+        preserveNullAndEmptyArrays: true
+      }},
+      {$lookup: {
+        from: 'prices',
+        localField: 'vehicleType',
+        foreignField: 'id',
+        as: 'priceVT'
+      }},
+      {$unwind: {
+        path: '$priceVT',
+        preserveNullAndEmptyArrays: true
+      }},
+      {$lookup: {
+        from: 'prices',
+        localField: 'brand',
+        foreignField: 'id',
+        as: 'priceBrand'
+      }},
+      {$unwind: {
+        path: '$priceBrand',
+        preserveNullAndEmptyArrays: true
+      }},
+      {$lookup: {
+        from: 'prices',
+        localField: 'typeId',
+        foreignField: 'id',
+        as: 'priceType'
+      }},
+      {$unwind: {
+        path: '$priceType',
+        preserveNullAndEmptyArrays: true
+      }},
+      {$project: {
+        'isInStock': 1,
+        'isReadyForSale': 1,
+        'typeId': 1,
+        'vehicleType': 1,
+        'brand': 1,
+        'model': 1,
+        'vehicleId': 1,
+        // 'year': {$year: '$vehicle.vehicle.registrationDate'},
+        'age': 1,
+        'priceType': '$priceType.number',
+        'priceBrand': {$cond: ['$priceBrand', '$priceBrand.number', 0]},
+        'priceVT': {$cond: ['$priceVT', '$priceVT.number', 0]},
+        'priceAge': {$cond: ['$priceAge', '$priceAge.number', 0]},
+        'price': {$ceil: {$multiply: [
+          {$add: [
+            1, 
+            {$divide: [{$cond: ['$priceBrand', '$priceBrand.number', 0]}, 100]},
+            {$divide: [{$cond: ['$priceVT', '$priceVT.number', 0]}, 100]},
+            {$divide: [{$cond: ['$priceAge', '$priceAge.number', 0]}, 100]},
+          ]},
+          '$priceType.number'
+        ]}}
+      }}
+    ]).toArray();
+    res.json(queryResult);
+  }).catch(error => {
+    return res.status(500).json({
+      ok: false, error: error.stack
+    });
+  })
+})
+
+router.post('/query0', (req, res) => {
   console.log(req.body);
   if (!req.body) {
     res.status(400).json({
