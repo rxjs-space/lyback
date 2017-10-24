@@ -14,7 +14,7 @@ const patchesCollectionName = 'paymentToOwnerBatchPatches';
 
 const reportsGet = (req, res) => {
   const title = req.query.title;
-  const facility = req.query.facility;
+  const facility = req.query.facility === 'f000' ? 'f001' : req.query.facility;
   if (!title || !facility) {
     return res.status(400).json({
       message: "insufficient parameters."

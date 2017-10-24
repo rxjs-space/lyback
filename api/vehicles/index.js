@@ -62,13 +62,19 @@ const getVtbmymIdPromise = (db, patches, newVehicle) => {
     co(function*() {
       const vtbmymPatch = patches.patches.find(p => p.path.indexOf('vtbmym') > -1);
       // if (vtbmymPatch.value === 'new') {
-        let vehicleType, brand, model, year, month;
+        let vehicleType, brand, model, registrationDate, year, month;
         if (newVehicle) {
           vehicleType = newVehicle.vehicle.vehicleType;
           brand = newVehicle.vehicle.brand;
           model = newVehicle.vehicle.model;
-          year = newVehicle.vehicle.registrationDate.substring(0, 4);
-          month = newVehicle.vehicle.registrationDate.substring(4, 2);
+          registrationDate = newVehicle.vehicle.registrationDate;
+          if (registrationDate instanceof Date) {
+            year = registrationDate.toISOString().substring(0, 4);
+            month = registrationDate.toISOString().substring(4, 2);
+          } else {
+            year = registrationDate.substring(0, 4);
+            month = registrationDate.substring(4, 2);
+          }
         } else {
           const vin = patches.vin;
           const findVehicleResult = yield db.collection('vehicles').find({vin}).toArray();
@@ -81,9 +87,14 @@ const getVtbmymIdPromise = (db, patches, newVehicle) => {
           const modelPatch = patches.patches.find(p => p.path.indexOf('model')) > -1;
           model = modelPatch ? modelPatch.value : oldVehicle.vehicle.model;
           const registrationDatePatch = patches.patches.find(p => p.path.indexOf('registrationDate') > -1);
-          const registrationDate = registrationDatePatch ? registrationDatePatch.value : oldVehicle.vehicle.registrationDate;
-          year = registrationDate.substring(0, 4);
-          month = registrationDate.substring(4, 2);
+          registrationDate = registrationDatePatch ? registrationDatePatch.value : oldVehicle.vehicle.registrationDate;
+          if (registrationDate instanceof Date) {
+            year = registrationDate.toISOString().substring(0, 4);
+            month = registrationDate.toISOString().substring(4, 2);
+          } else {
+            year = registrationDate.substring(0, 4);
+            month = registrationDate.substring(4, 2);
+          }
           // console.log(vehicleType, brand, model, year, month);
         }
 
