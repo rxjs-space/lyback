@@ -24,7 +24,7 @@ const rootPost = (req, res) => {
   res.json({ok: true});
 }
 
-const rootPatch = (req, res) => {
+const onePatch = (req, res) => {
   res.json({ok: true});
 }
 

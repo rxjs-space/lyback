@@ -200,7 +200,7 @@ router.post('/', (req, res) => {
     const patchResult = yield db.collection('vehiclePatches').insert(patches);
     console.log('patches inserted');
     const saveResult = yield db.collection('vehicles').insert(newVehicle);
-    console.log('vehicle inserted');
+    console.log('vehicle inserted', saveResult['insertedIds'][0]);
     // create preDismantlingOrder
     // yield createPreDismantlingOrderPromise(db, newVehicle); // will use different dismantlingOrder system
     res.json(saveResult);
@@ -320,7 +320,7 @@ const rootGetDefault = (req, res, queryParams, keys) => {
 }
 
 const rootGetPaymentToOwnerReady = (req, res) => {
-  const facility = req.query.facility;
+  const facility = req.query.facility === 'f000' ? 'f001' : req.query.facility;
   if (!facility) {
     return res.status(400).json({
       message: "insufficient parameters."
@@ -466,12 +466,13 @@ const rootGetPaymentToOwnerZeroRD = (req, res) => {
 
 router.get('/', (req, res) => {
   const queryParams = req.query;
-  const keys = Object.keys(queryParams);
-  if (!keys.length) {
+  if (!queryParams || !Object.keys(queryParams)) {
     return res.status(400).json({
       message: "insufficient parameters."
     });
   }
+  const keys = Object.keys(queryParams);
+  
   // value of each queryParam has been JSON.stringify-ed at the frontend
   keys.forEach(k => {
     queryParams[k] = JSON.parse(queryParams[k]);

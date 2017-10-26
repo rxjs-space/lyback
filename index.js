@@ -44,6 +44,12 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(myPassport.initialize());
 
+app.get('/test-error', (req, res) => {
+  res.status(401).json({
+    ok: false,
+    message: 'expired'
+  });
+})
 app.use('/authenticate', authenticate);
 app.use('/api', api);
 
