@@ -57,25 +57,35 @@ const rootGet = (req, res) => {
 }
 
 const rootPost = (req, res) => {
-  if (!req.body || !req.body.customer || !req.body.patches) {
+  if (!req.body) {
     return res.status(400).json({
       message: "insufficient parameters."
     })
   }
   const thatTime = new Date();
   const thatUser = req.user._id;
+  const newCustomer = req.body;
+
+  const patches = {
+    patches: Object.keys(newCustomer).map(key => ({
+      op: 'replace', path: `/${key}`, value: newCustomer[key]
+    }))
+  };
+  patches.createdAt = newCustomer.createdAt = thatTime;
+  patches.createdBy = newCustomer.createdBy = thatUser;
+
+  // console.log(patches);
   co(function*() {
     const db = yield dbX.dbPromise;
-    const newCustomer = req.body.customer;
-    const patches = req.body.patches;
-    patches.createdAt = newCustomer.createdAt = thatTime;
-    patches.createdBy = newCustomer.createdBy = thatUser;
     // insert customer first and get the _id, and insert patches
     const saveResult = yield db.collection('customers').insert(newCustomer);
     patches.customerId = saveResult['insertedIds'][0];
     const patchResult = yield db.collection('customerPatches').insert(patches);
+    const customerSaved = yield db.collection('customers').findOne({
+      _id: saveResult['insertedIds'][0]
+    });
     console.log('customer inserted');
-    res.json(saveResult);
+    res.json(customerSaved);
   }).catch(err => {
     if (err.stack && err.stack.indexOf('E11000') > -1) {
       return res.status(400).json(err.stack)
@@ -83,7 +93,7 @@ const rootPost = (req, res) => {
     console.log('error at POST /customers:', err.stack);
     return res.status(500).json(err.stack);
   })
-  res.json({ok: true});
+  // res.json({ok: true});
 }
 
 const rootPatch = (req, res) => {
@@ -92,5 +102,6 @@ const rootPatch = (req, res) => {
 
 
 router.get('/', rootGet);
+router.post('/', rootPost);
 router.get('/reports', require('./reports'));
 module.exports = router;
