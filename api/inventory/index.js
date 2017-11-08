@@ -6,9 +6,136 @@ const ObjectID = require('mongodb').ObjectID;
 const getLastSundays = require('../../utils/last-sundays');
 const dbX = require('../../db');
 
-router.get('/', (req, res) => {
-  res.send('ok');
-});
+const rootGetDefault = (req, res, queryParams, keys) => {
+  const dbQuery = {}; // transform queryParmas into dbQuery, when necessary
+  keys.forEach(k => {
+    dbQuery[k] = queryParams[k];    
+  })
+  console.log(dbQuery);
+
+  co(function*() {
+    const db = yield dbX.dbPromise;
+    const results = yield db.collection('inventory').aggregate([
+      {$match: dbQuery},
+      {$lookup: {
+        from: 'vehicles',
+        localField: 'vehicleId',
+        foreignField: '_id',
+        as: 'vehicle'
+      }},
+      {$unwind: '$vehicle'},
+      {$project: {
+        'isInStock': 1,
+        'isReadyForSale': 1,
+        'typeId': 1,
+        'vehicleType': '$vehicle.vehicle.vehicleType',
+        'brand': '$vehicle.vehicle.brand',
+        'model': '$vehicle.vehicle.model',
+        'vehicleId': '$vehicle._id',
+        // 'year': {$year: '$vehicle.vehicle.registrationDate'},
+        'age': {$floor: {$divide: [{$subtract: [
+          new Date(),
+          '$vehicle.vehicle.registrationDate'          
+        ]}, 1000 * 60 * 60 * 24 * 365]}},
+      }},
+      {$lookup: {
+        from: 'prices',
+        localField: 'age',
+        foreignField: 'id',
+        as: 'priceAge'
+      }},
+      {$unwind: {
+        path: '$priceAge',
+        preserveNullAndEmptyArrays: true
+      }},
+      {$lookup: {
+        from: 'prices',
+        localField: 'vehicleType',
+        foreignField: 'id',
+        as: 'priceVT'
+      }},
+      {$unwind: {
+        path: '$priceVT',
+        preserveNullAndEmptyArrays: true
+      }},
+      {$lookup: {
+        from: 'prices',
+        localField: 'brand',
+        foreignField: 'id',
+        as: 'priceBrand'
+      }},
+      {$unwind: {
+        path: '$priceBrand',
+        preserveNullAndEmptyArrays: true
+      }},
+      {$lookup: {
+        from: 'prices',
+        localField: 'typeId',
+        foreignField: 'id',
+        as: 'priceType'
+      }},
+      {$unwind: {
+        path: '$priceType',
+        preserveNullAndEmptyArrays: true
+      }},
+      {$project: {
+        'isInStock': 1,
+        'isReadyForSale': 1,
+        'typeId': 1,
+        'vehicleType': 1,
+        'brand': 1,
+        'model': 1,
+        'vehicleId': 1,
+        // 'year': {$year: '$vehicle.vehicle.registrationDate'},
+        'age': 1,
+        'priceType': '$priceType.number',
+        'priceBrand': {$cond: ['$priceBrand', '$priceBrand.number', 0]},
+        'priceVT': {$cond: ['$priceVT', '$priceVT.number', 0]},
+        'priceAge': {$cond: ['$priceAge', '$priceAge.number', 0]},
+        'price': {$ceil: {$multiply: [
+          {$add: [
+            1, 
+            {$divide: [{$cond: ['$priceBrand', '$priceBrand.number', 0]}, 100]},
+            {$divide: [{$cond: ['$priceVT', '$priceVT.number', 0]}, 100]},
+            {$divide: [{$cond: ['$priceAge', '$priceAge.number', 0]}, 100]},
+          ]},
+          '$priceType.number'
+        ]}}
+      }}
+    ]).toArray();
+    return res.json(results);
+
+  }).catch((err) => {
+    return res.status(500).json(err.stack);
+  })
+}
+
+const rootGet = (req, res) => {
+  const queryParams = req.query;
+  if (!queryParams || !Object.keys(queryParams)) {
+    return res.status(400).json({
+      message: "insufficient parameters."
+    });
+  }
+  const keys = Object.keys(queryParams);
+
+  // value of each queryParam has been JSON.stringify-ed at the frontend
+  keys.forEach(k => {
+    queryParams[k] = JSON.parse(queryParams[k]);
+  })
+  console.log(queryParams);
+  switch (true) {
+    case queryParams.title === 'all':
+      return res.json({
+        message: 'want them all?'
+      });
+    default:
+      return rootGetDefault(req, res, queryParams, keys);
+  }
+}
+
+
+router.get('/', rootGet);
 
 router.post('/query', (req, res) => {
   // todo: add user.role checking, so to decide whether to return price info

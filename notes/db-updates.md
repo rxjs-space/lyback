@@ -11,3 +11,6 @@ db.dismantlingPrepareBatches.updateMany({}, {$set: {completed: true}})
 
 #20171025
 set unique index for 'name' of collection 'customers'
+
+#20171023
+add idString to inventory

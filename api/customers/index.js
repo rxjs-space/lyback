@@ -34,7 +34,7 @@ const rootGetDefault = (req, res, queryParams, keys) => {
 
 const rootGet = (req, res) => {
   const queryParams = req.query;
-  if (!queryParams || !Object.keys(queryParams)) {
+  if (!queryParams) {
     return res.status(400).json({
       message: "insufficient parameters."
     });

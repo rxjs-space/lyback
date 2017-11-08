@@ -103,7 +103,7 @@ router.post('/', (req, res) => {
   }
 
   const createdAt = new Date();
-  const createdBy = new ObjectID(req.user._id);
+  const createdBy = req.user._id;
 
   const newDismantlingOrder = req.body.dismantlingOrder;
   newDismantlingOrder.vehicleId = new ObjectID(newDismantlingOrder.vehicleId);
@@ -432,6 +432,13 @@ const insertInventoryAndUpdateDismantlingOrder = (db, updatedDismantlingOrder, r
       }, []);
 
       const inventoryInsertResult = yield db.collection('inventory').insertMany(pws);
+      const pwIds = inventoryInsertResult.insertedIds;
+      yield coForEach(pwIds, function*(id) {
+        const updatePWResult = yield db.collection('inventory').updateOne({_id: id}, {
+          $set: {'idString': JSON.stringify(id)}
+        }, {upsert: true})
+      });
+
 
       dismantlingOrderPatchesToInsert.patches = patchesForAddingPWs.reduce((acc, curr) => {
         const typeId = curr.path.split('/')[2];
