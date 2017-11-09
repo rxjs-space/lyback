@@ -3,6 +3,7 @@ const jwt = require("jwt-simple");
 const co = require('co');
 const coForEach = require('co-foreach');
 const ObjectID = require('mongodb').ObjectID;
+const toMongodb = require('jsonpatch-to-mongodb');
 
 const myAcl = require('../../my-acl');
 const getMondayOfTheWeek = require('../../utils').getMondayOfTheWeek;
@@ -68,7 +69,7 @@ const rootGetDefault = (req, res, queryParams, keys) => {
           customer: 1,
           createdAt: 1,
           createdBy: 1,
-          discount: 1,
+          discountPercent: 1,
           paid: 1,
           deleted: 1,
           products: {
@@ -96,7 +97,7 @@ const rootGetDefault = (req, res, queryParams, keys) => {
           customer: {$first: '$customer'},
           createdAt: {$first: '$createdAt'},
           createdBy: {$first: '$createdBy'},
-          discount: {$first: '$discount'},
+          discountPercent: {$first: '$discountPercent'},
           paid: {$first: '$paid'},
           deleted: {$first: '$deleted'},
           products: {$push: '$products'},
@@ -108,7 +109,7 @@ const rootGetDefault = (req, res, queryParams, keys) => {
         //   customer: 1,
         //   createdAt: 1,
         //   createdBy: 1,
-        //   discount: 1,
+        //   discountPercent: 1,
         //   paid: 1,
         //   deleted: 1,
         //   products: 1,
@@ -121,6 +122,7 @@ const rootGetDefault = (req, res, queryParams, keys) => {
         {$match: dbQuery},
       ]).toArray();
     }
+    // console.log(results);
     return res.json(results);
 
   }).catch((err) => {
@@ -131,11 +133,12 @@ const rootGetDefault = (req, res, queryParams, keys) => {
 const rootGetByDate =  (req, res, date) => {
   co(function*() {
     const db = yield dbX.dbPromise;
-    const begginingDateTime = new Date(new Date(date) - 1000 * 60 * 60 * 8);
-    const endingDateTime = new Date(new Date(date) + 1000 * 60 * 60 * 16);
+    const begginingDateTime = new Date(Date.parse(date) - 1000 * 60 * 60 * 8);
+    const endingDateTime = new Date(Date.parse(date) + 1000 * 60 * 60 * 16);
     console.log(begginingDateTime);
+    console.log(endingDateTime);
     let results = yield db.collection(collectionName).aggregate([
-        {$match: {$or: [
+        {$match: {$and: [
           {createdAt: {$gte: begginingDateTime}},
           {createdAt: {$lt: endingDateTime}},
         ]}},
@@ -152,8 +155,9 @@ const rootGetByWeek =  (req, res, week) => {
     const begginingDateTime = getMondayOfTheWeek(week);
     const endingDateTime = new Date(Date.parse(begginingDateTime) + 1000 * 60 * 60 * 24 * 7);
     console.log(begginingDateTime);
+    console.log(endingDateTime);
     let results = yield db.collection(collectionName).aggregate([
-        {$match: {$or: [
+        {$match: {$and: [
           {createdAt: {$gte: begginingDateTime}},
           {createdAt: {$lt: endingDateTime}},
         ]}},
@@ -216,17 +220,19 @@ const rootPost = (req, res) => {
   patches.createdAt = createdAt;
   patches.createdBy = createdBy;
 
-  let writeStatus = {
+  const writeStatus = {
     insertItem: null,
     insertPatches: null,
-    updateInventory: null
+    updateInventory: null,
+    itemId: null
   }
 
   co(function*() {
     const db = yield dbX.dbPromise;
     const insertItemResult = yield db.collection('salesOrders').insert(newSalesOrder);
-    writeStatus.insertItem = 'done';
     const salesOrderId = insertItemResult.insertedIds[0];
+    writeStatus.insertItem = 'done';
+    writeStatus.itemId = salesOrderId;
     patches.salesOrderId = salesOrderId;
     const insertPatchesResult = yield db.collection('salesOrderPatches').insert(patches);
     writeStatus.insertPatches = 'done';
@@ -249,12 +255,54 @@ const rootPost = (req, res) => {
 
 }
 
-const onePatch = (req, res) => {
-  res.json({ok: true});
+const preparePatches = (patches) => {
+  patches.forEach(patch => {
+    if ((patch.path.indexOf('Notes') > -1) && patch.op === 'add') {
+      patch.op = 'replace';
+    }
+  })
+  return patches;
+}
+
+const rootPatch = (req, res) => {
+  if (!req.body || !req.body._id || !req.body.patches) {
+    return res.status(400).json({
+      message: 'no data or no _id provided.'
+    })
+  }
+  const modifiedAt = new Date();
+  const modifiedBy = req.user._id;
+  const itemId = req.body._id;
+  const patches = {
+    patches: preparePatches(req.body.patches),
+    createdAt: modifiedAt,
+    createdBy: modifiedBy
+  };
+  const patchesToApply = toMongodb(patches.patches);
+  const writeStatus = {
+    updateItem: null,
+    insertPatches: null,
+  };
+
+  co(function*() {
+    const db = yield dbX.dbPromise;
+    const insertPatchesResult = yield db.collection('salesOrderPatches').insert(patches);
+    writeStatus.insertPatches = true;
+    const updateItemResult = yield db.collection('salesOrders').updateOne({
+      _id: new ObjectID(itemId)
+    }, patchesToApply);
+    writeStatus.updateItem = true;
+    res.json(writeStatus);
+  }).catch(err => {
+    return res.status(500).json(err.stack);
+  })
+
+  // res.json({ok: true});
 }
 
 
 router.get('/', rootGet);
 router.get('/reports', require('./reports'));
 router.post('/', rootPost);
+router.patch('/', rootPatch);
 module.exports = router;

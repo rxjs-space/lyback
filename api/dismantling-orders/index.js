@@ -435,7 +435,7 @@ const insertInventoryAndUpdateDismantlingOrder = (db, updatedDismantlingOrder, r
       const pwIds = inventoryInsertResult.insertedIds;
       yield coForEach(pwIds, function*(id) {
         const updatePWResult = yield db.collection('inventory').updateOne({_id: id}, {
-          $set: {'idString': JSON.stringify(id)}
+          $set: {'idString': JSON.parse(JSON.stringify(id))}
         }, {upsert: true})
       });
 

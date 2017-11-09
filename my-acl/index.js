@@ -37,24 +37,22 @@ module.exports = {
         const aclInstance = yield self.aclInstancePromise;
         const id = req.user._id.toHexString();
         yield aclInstance.allow('admin', '/api/customers', '*');
-        yield aclInstance.allow('operationOperator', '/api/customers', ['post', 'get']);
+        yield aclInstance.allow('operationOperator', '/api/customers', ['post', 'get', 'patch']);
         yield aclInstance.allow('admin', '/api/customers/one', '*');
-        yield aclInstance.allow('operationOperator', '/api/customers/one', ['get', 'patch']);
         yield aclInstance.allow('admin', '/api/customers/reports', '*');
         yield aclInstance.allow('operationOperator', '/api/customers/reports', ['get']);
         yield aclInstance.allow('admin', '/api/sales/reports', '*');
         yield aclInstance.allow('operationOperator', '/api/sales/reports', ['get']);
         yield aclInstance.allow('admin', '/api/sales', '*');
-        yield aclInstance.allow('operationOperator', '/api/sales', ['post', 'get']);
+        yield aclInstance.allow('operationOperator', '/api/sales', ['post', 'get', 'patch']);
         yield aclInstance.allow('admin', '/api/sales/one', '*');
-        yield aclInstance.allow('operationOperator', '/api/sales/one', ['get', 'patch']);
         // yield aclInstance.allow('admin', '/api/payments-to-owner/reports', '*');
         // yield aclInstance.allow('operationOperator', '/api/payments-to-owner', ['post', 'get', 'patch']);
         // yield aclInstance.allow('operationOperator', '/api/users/one', 'patch');
 // 
         // yield aclInstance.removeUserRoles(id, 'user');
         // yield aclInstance.addUserRoles(id, 'admin');
-        // yield aclInstance.addRoleParents('operationManager', ['operationOperator']);
+        yield aclInstance.addRoleParents('accountingManager', ['accountingOperator']);
         // yield aclInstance.allow('operationOperator', '/api/vehicles', ['get', 'post']);
         // yield aclInstance.allow('operationOperator', '/api/vehicles/one', ['get', 'patch']);
         // yield aclInstance.allow('operationOperator', '/api/brands', ['get', 'post']);

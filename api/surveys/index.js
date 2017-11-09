@@ -205,7 +205,7 @@ const rootPost = (req, res) => {
 };
 
 const rootPatch = (req, res) => {
-  if (!req.body || !req.body._id) {
+  if (!req.body || !req.body._id || !req.body.patches) {
     return res.status(400).json({
       message: 'no data or no _id provided.'
     })
