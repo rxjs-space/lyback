@@ -1,18 +1,23 @@
-const https = require('https');
-const fs = require('fs');
-
-const options = {
-  key: fs.readFileSync('../cert/privateKey.key'),
-  cert: fs.readFileSync('../cert/certificate.crt')
-};
-
-
 const express = require('express');  
+const app = express();
+
+let server;
+
+if (process.env.SERVER === 'HEROKU') {
+  server = require('http').Server(app);
+} else {
+  const fs = require('fs');
+  const options = {
+    key: fs.readFileSync('../cert/privateKey.key'),
+    cert: fs.readFileSync('../cert/certificate.crt')
+  };
+  server = require('https').createServer(options, app);
+}
+
+
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const app = express();
-// const server = require('http').Server(app);
-const server = https.createServer(options, app);
+
 const io = require('socket.io')(server);
 
 const port = process.env.PORT || 3001;

@@ -80,3 +80,7 @@ mongodump --host ds161960.mlab.com -d longyundb --port 61960 --username timliu -
 mongorestore --host ds054289.mlab.com -d longyundb --port 54289 --username timliu --password 2858880 dump-20170817-0915/
 
 mongorestore --host 127.0.0.1 dump-20171017-0726/
+
+http://voidcanvas.com/create-ssl-https-server-in-nodejs/
+openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout privateKey.key -out certificate.crt
+last key generated on 20171205
