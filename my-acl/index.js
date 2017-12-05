@@ -46,6 +46,7 @@ module.exports = {
         yield aclInstance.allow('admin', '/api/sales', '*');
         yield aclInstance.allow('operationOperator', '/api/sales', ['post', 'get', 'patch']);
         yield aclInstance.allow('admin', '/api/sales/one', '*');
+        yield aclInstance.allow('admin', '/api/roles/permissions', '*');
         // yield aclInstance.allow('admin', '/api/payments-to-owner/reports', '*');
         // yield aclInstance.allow('operationOperator', '/api/payments-to-owner', ['post', 'get', 'patch']);
         // yield aclInstance.allow('operationOperator', '/api/users/one', 'patch');

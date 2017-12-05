@@ -1,8 +1,18 @@
+const https = require('https');
+const fs = require('fs');
+
+const options = {
+  key: fs.readFileSync('../cert/privateKey.key'),
+  cert: fs.readFileSync('../cert/certificate.crt')
+};
+
+
 const express = require('express');  
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const app = express();
-const server = require('http').Server(app);
+// const server = require('http').Server(app);
+const server = https.createServer(options, app);
 const io = require('socket.io')(server);
 
 const port = process.env.PORT || 3001;
@@ -35,7 +45,7 @@ app.use((req, res, next) => {
 })
 
 const localHostInArr = process.env.LOCAL_HOST ? process.env.LOCAL_HOST : [];
-const origins = ['http://lynx0421.coding.me', 'https://lynx0421.coding.me'].concat(localHostInArr);
+const origins = ['http://lynx0421.coding.me', 'https://lynx0421.coding.me', 'http://localhost:3000', 'https://localhost:3000'].concat(localHostInArr);
 app.use(cors({
   origin: origins
 }));
@@ -59,7 +69,6 @@ app.use(errorHandler);
 require('./sockets').collectionVersionsNS(io);
 
 dbX.connect().then((db) => {
-  // db.close(); // to test for case where db connection is lost
   server.listen(port, function() {  
     console.log('listening on port', port);
   });
