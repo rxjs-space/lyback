@@ -6,6 +6,40 @@ const myAcl = require('../../my-acl');
 
 const dbX = require('../../db');
 
+const postModelsList = (req, res) => {
+  if (!req.body || !req.body.brand) {
+    return res.status(500).json({
+      message: 'No brand details provided.'
+    })
+  }
+
+  const brand = req.body.brand;
+  // get all the vehicles of this brand, and get the models
+  co(function*() {
+    const db = yield dbX.dbPromise;
+    // let result = yield db.collection('vehicles').aggregate([
+    //   {$match: {
+    //     'vehicle.brand': brand
+    //   }},
+    //   {$group: {
+    //     _id: {
+    //       'model': '$vehicle.model',
+    //     },
+    //     // count: {$sum: 1}
+    //   }}
+    // ]).toArray();
+    // result = result.map(r => r._id.model);
+    const thatBrand = yield db.collection('brands').findOne({
+      _id: new ObjectID(brand)
+    });
+    res.json(thatBrand.models.sort());
+  }).catch(error => {
+    return res.status(500).json(error.stack);
+  })
+
+}
+
+router.post('/models/list', postModelsList);
 
 router.post('/', function(req, res) {
   if (!req.body) {return res.status(500).json({
@@ -58,7 +92,9 @@ router.post('/', function(req, res) {
 router.get('/', (req, res) => {
   co(function*() {
     const db = yield dbX.dbPromise;
-    const brands = yield db.collection('brands').find().toArray();
+    const brands = yield db.collection('brands').find({
+      name: 1
+    }).toArray();
     res.json(brands);
   }).catch(err => {
     return res.status(500).json(err.stack);

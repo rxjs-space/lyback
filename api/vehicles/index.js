@@ -201,6 +201,14 @@ router.post('/', (req, res) => {
     console.log('patches inserted');
     const saveResult = yield db.collection('vehicles').insert(newVehicle);
     console.log('vehicle inserted', saveResult['insertedIds'][0]);
+
+    // update models set in brand
+    if (newVehicle.vehicle.brand && newVehicle.vehicle.model) {
+      const addModelToSetInBrandResult = yield db.collection('brands').updateOne({
+        _id: new ObjectID(newVehicle.vehicle.brand)
+      }, {$addToSet: {models: newVehicle.vehicle.model}});
+    }
+
     // create preDismantlingOrder
     // yield createPreDismantlingOrderPromise(db, newVehicle); // will use different dismantlingOrder system
     res.json(saveResult);
@@ -213,7 +221,7 @@ router.post('/', (req, res) => {
     { Error: read ECONNRESET
     at exports._errnoException (util.js:1022:11)
     at TCP.onread (net.js:569:26) name: 'MongoError', message: 'read ECONNRESET' }
-Error: read ECONNRESET
+    Error: read ECONNRESET
     at exports._errnoException (util.js:1022:11)
     at TCP.onread (net.js:569:26)
     
@@ -658,6 +666,22 @@ router.patch('/one', (req, res) => {
         patchesToApplyFollowingUp
       )
     }
+
+    // update models set in brand
+    let patchedModel = false;
+    for (const patch of patches.patches) {
+      if (patch.path.indexOf('model') > -1) {
+        patchedModel = true;
+        break;
+      }
+    }
+    if (patchedModel) {
+      const thatVehicle = yield db.collection('vehicles').findOne({_id: new ObjectID(vehicleId)}, {'vehicle.brand': 1, 'vehicle.model': 1});
+      const addModelToSetInBrandResult = yield db.collection('brands').updateOne({
+        _id: new ObjectID(thatVehicle.vehicle.brand)
+      }, {$addToSet: {models: thatVehicle.vehicle.model}});
+    }
+
 
     res.json(updateResult);
     // res.json({
