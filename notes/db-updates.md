@@ -5,17 +5,17 @@ clear dismantlingOrders, dismantlingOrderPatches, inventory, inventoryPatches
 
 db.dismantlingPrepareBatches.updateMany({}, {$set: {completed: true}})
 
-#2017123
+#2017123 (done)
 > var cursor = db.vehicles.find({"vehicle.registrationDate": {"$exists": true, "$type": 2}});
 > while (cursor.hasNext()) {var doc = cursor.next(); db.vehicles.update({"_id": doc._id}, {"$set": {"vehicle.registrationDate": new ISODate(doc.vehicle.registrationDate)}});}
 
-#20171025
+#20171025 (done)
 set unique index for 'name' of collection 'customers'
 
-#20171023
+#20171023 (done)
 add idString to inventory
 
-#20171206
+#20171206 (done)
 add models to brands
 // get brandId for each brand
 // get models list for that brand

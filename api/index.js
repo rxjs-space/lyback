@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const vehicles = require('./vehicles');
-const products = require('./products');
+const pws = require('./pws');
 const users = require('./users');
 const roles = require('./roles');
 const tt = require('./tt');
@@ -26,7 +26,7 @@ router.use(myAcl.middlleware());
 
 
 router.use('/vehicles', vehicles);
-router.use('/products', products);
+router.use('/pws', pws);
 router.use('/users', users);
 router.use('/roles', roles);
 router.use('/tt', tt);
@@ -35,8 +35,8 @@ router.use('/stats', stats);
 router.use('/brands', brands);
 router.use('/inventory', inventory);
 router.use('/batches', batches);
-// router.use('/prices', prices);
-router.use('/prices', prices0);
+router.use('/prices', prices);
+// router.use('/prices', prices0);
 router.use('/sales', sales);
 router.use('/customers', customers);
 router.use('/versions', versions);

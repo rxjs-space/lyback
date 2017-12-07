@@ -92,7 +92,7 @@ router.post('/', function(req, res) {
 router.get('/', (req, res) => {
   co(function*() {
     const db = yield dbX.dbPromise;
-    const brands = yield db.collection('brands').find({
+    const brands = yield db.collection('brands').find({}, {
       name: 1
     }).toArray();
     res.json(brands);
