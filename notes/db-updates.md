@@ -45,3 +45,16 @@ add models to brands
   }
 
 ```
+
+# 20171207 (done)
+each brand shall have at least one model named '.'
+```js
+var cursor = db.brands.find({});
+while (cursor.hasNext()) {
+  var doc = cursor.next();
+  db.brands.update({_id: doc._id}, {
+    $addToSet: {models: '.'}
+  })
+}
+```
+# 20171207 - set combination-key for pricesV2 - 

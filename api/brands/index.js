@@ -52,6 +52,7 @@ router.post('/', function(req, res) {
     newBrands = [req.body]
   }
   newBrands.forEach(b => {
+    b.models = ['.']; // insert a model named '.'
     if (!b.name) {
       const bStr = JSON.stringify(b);
       return res.status(500).json({
@@ -90,11 +91,21 @@ router.post('/', function(req, res) {
 });
 
 router.get('/', (req, res) => {
+  const query = JSON.parse(JSON.stringify(req.query));
+  const showAll = query.showAll;
+  delete query.showAll;
+  if (query._id) {
+    query._id = new ObjectID(query._id);
+  }
+  let projection;
+  if (Object.keys(query).length || showAll) {
+    projection = {};
+  } else {
+    projection = {name: 1};
+  }
   co(function*() {
     const db = yield dbX.dbPromise;
-    const brands = yield db.collection('brands').find({}, {
-      name: 1
-    }).toArray();
+    const brands = yield db.collection('brands').find(query, projection).toArray();
     res.json(brands);
   }).catch(err => {
     return res.status(500).json(err.stack);
