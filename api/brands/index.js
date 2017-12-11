@@ -2,6 +2,8 @@ const router = require('express').Router();
 const jwt = require("jwt-simple"); 
 const co = require('co');
 const ObjectID = require('mongodb').ObjectID;
+const toMongodb = require('jsonpatch-to-mongodb');
+
 const myAcl = require('../../my-acl');
 
 const dbX = require('../../db');
@@ -142,5 +144,38 @@ router.get('/one', (req, res) => {
 
 
 })
+
+const patchRoot = (req, res) => {
+  const brandId = req.query.brandId ? req.query.brandId : null;
+  const patches = req.body;
+  console.log(patches);
+  if (!brandId || !patches) {
+    return res.status(400).json({
+      message: 'Insufficient data provided.'
+    });
+  }
+  const thatTime = new Date();
+  const thatUser = req.user._id;
+  const patchesX = {
+    patches,
+    patchedAt: thatTime,
+    patchedBy: thatUser,
+    target: brandId
+  };
+  const patchesToApply = toMongodb(patches);
+
+  co(function*() {
+    const db = yield dbX.dbPromise;
+    const patchResult = yield db.collection('brands').update({
+      _id: new ObjectID(brandId)
+    }, patchesToApply);
+    const savePatchesXResult = yield db.collection('brandPatches').insert(patchesX);
+    res.json(patchResult);
+  }).catch(error => {
+    return res.status(500).json(error.stack);
+  })
+};
+
+router.patch('/', patchRoot);
 
 module.exports = router;

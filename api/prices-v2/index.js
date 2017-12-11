@@ -34,9 +34,14 @@ const patchRoot = (req, res) => {
         patchesForX.patches.push(
           {op: 'replace', path: '/createdAt', value: thatTime}, 
           {op: 'replace', path: '/createdBy', value: thatUser},
-          {op: 'replace', path: '/numberCreatedAs', value: patch.value}
+          {op: 'replace', path: '/numberCreatedAs', value: patch.value},
+          {op: 'replace', path: '/key', value: patch.target.brandId + patch.target.model + patch.target.pwId}
         )
       } else { // if this is to update an existing one, save the patches
+        patchesForX.patches.push(
+          {op: 'replace', path: '/modifiedAt', value: thatTime}, 
+          {op: 'replace', path: '/modifiedBy', value: thatUser}
+        )
         patchesForX.target = existingDoc._id;
         const insertPatchesResult = yield db.collection(patchesCollectionName).insert(patchesForX);
       }
@@ -68,7 +73,7 @@ const postRoot = (req, res) => {
       message: 'No data provided.'
     });
   }
-  let newPrices; // each new price will have fileds as "brandId, model, partId, number"
+  let newPrices; // each new price will have fileds as "brandId, model, pwId, number"
   if (req.body instanceof Array) {
     newPrices = req.body;
   } else {
@@ -77,6 +82,7 @@ const postRoot = (req, res) => {
   const createdAt = new Date();
   const createdBy = req.user._id;
   newPrices.forEach(p => {
+    p.key = p.brandId + p.model + p.pwId;
     p.numberCreatedAs = p.number;
     p.createdAt = createdAt;
     p.createdBy = createdBy;
@@ -106,7 +112,7 @@ const postSearch = (req, res) => {
     });
   }
   const projection = req.query.fat ? {} : {
-    numberCreatedAs: 0, _id: 0, createdAt: 0, createdBy: 0
+    numberCreatedAs: 0, _id: 0, createdAt: 0, createdBy: 0, key: 0
   };
   const searchParams = req.body;
   co(function*() {

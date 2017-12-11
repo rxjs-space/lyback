@@ -49,61 +49,25 @@ const rootGetDefault = (req, res, queryParams, keys) => {
           as: 'customer'
         }},
         {$unwind: '$customer'},
-        {$unwind: '$products'},
-        {$lookup: {
-          from: 'inventory',
-          localField: 'products._id',
-          foreignField: '_id',
-          as: 'productsDetails'
-        }},
-        {$unwind: '$productsDetails'},
-        {$lookup: {
-          from: 'vehicles',
-          localField: 'productsDetails.vehicleId',
-          foreignField: '_id',
-          as: 'vehicleDetails'
-        }},
-        {$unwind: '$vehicleDetails'},
-        {$project: {
-          _id: 1,
-          customer: 1,
-          createdAt: 1,
-          createdBy: 1,
-          discountPercent: 1,
-          paid: 1,
-          deleted: 1,
-          products: {
-            _id: '$products._id',
-            price: '$products.price',
-            // priceAge: '$products.priceAge',
-            // priceBrand: '$products.priceBrand',
-            // priceType: '$products.priceType',
-            // priceVT: '$products.priceVT',
-            typeId: '$productsDetails.typeId',
-            vehicleId: '$productsDetails.vehicleId',
-            vehicleType: '$vehicleDetails.vehicle.vehicleType',
-            brand: '$vehicleDetails.vehicle.brand',
-          },
-          // productsDetails: 1,
-          // vehicleDetails: {
-          //   vehicleId: '$vehicleDetails._id',
-          //   vehicleType: '$vehicleDetails.vehicle.vehicleType',
-          //   brand: '$vehicleDetails.vehicle.brand',
-          // }
-          // vehicleDetails: {$push: '$vehicleDetails'}
-        }},
-        {$group: {
-          _id: '$_id',
-          customer: {$first: '$customer'},
-          createdAt: {$first: '$createdAt'},
-          createdBy: {$first: '$createdBy'},
-          discountPercent: {$first: '$discountPercent'},
-          paid: {$first: '$paid'},
-          deleted: {$first: '$deleted'},
-          products: {$push: '$products'},
-          // productsDetails: {$push: '$productsDetails'},
-          // vehicleDetails: {$push: '$vehicleDetails'}
-        }},
+        // {$unwind: '$products'},
+        // {$lookup: {
+        //   from: 'inventory',
+        //   localField: 'products._id',
+        //   foreignField: '_id',
+        //   as: 'productsDetails'
+        // }},
+        // // {$unwind: '$productsDetails'},
+        // {$unwind: {
+        //   path: '$productsDetails',
+        //   preserveNullAndEmptyArrays: true
+        // }},
+        // {$lookup: {
+        //   from: 'vehicles',
+        //   localField: 'productsDetails.vehicleId',
+        //   foreignField: '_id',
+        //   as: 'vehicleDetails'
+        // }},
+        // {$unwind: '$vehicleDetails'},
         // {$project: {
         //   _id: 1,
         //   customer: 1,
@@ -112,10 +76,39 @@ const rootGetDefault = (req, res, queryParams, keys) => {
         //   discountPercent: 1,
         //   paid: 1,
         //   deleted: 1,
-        //   products: 1,
-        //   productsDetails: 1,
+        //   products: {
+        //     _id: '$products._id',
+        //     price: '$products.price',
+        //     // priceAge: '$products.priceAge',
+        //     // priceBrand: '$products.priceBrand',
+        //     // priceType: '$products.priceType',
+        //     // priceVT: '$products.priceVT',
+        //     typeId: '$productsDetails.typeId',
+        //     vehicleId: '$productsDetails.vehicleId',
+        //     vehicleType: '$vehicleDetails.vehicle.vehicleType',
+        //     brand: '$vehicleDetails.vehicle.brand',
+        //     model: '$vehicleDetails.vehicle.model',
+        //   },
+        //   // productsDetails: 1,
+        //   // vehicleDetails: {
+        //   //   vehicleId: '$vehicleDetails._id',
+        //   //   vehicleType: '$vehicleDetails.vehicle.vehicleType',
+        //   //   brand: '$vehicleDetails.vehicle.brand',
+        //   // }
         //   // vehicleDetails: {$push: '$vehicleDetails'}
-        // }}
+        // }},
+        // {$group: {
+        //   _id: '$_id',
+        //   customer: {$first: '$customer'},
+        //   createdAt: {$first: '$createdAt'},
+        //   createdBy: {$first: '$createdBy'},
+        //   discountPercent: {$first: '$discountPercent'},
+        //   paid: {$first: '$paid'},
+        //   deleted: {$first: '$deleted'},
+        //   products: {$push: '$products'},
+        //   // productsDetails: {$push: '$productsDetails'},
+        //   // vehicleDetails: {$push: '$vehicleDetails'}
+        // }},
       ]).toArray();
     } else {
       results = yield db.collection(collectionName).aggregate([
@@ -209,7 +202,7 @@ const rootPost = (req, res) => {
   const newSalesOrder = JSON.parse(JSON.stringify(req.body.salesOrder));
   newSalesOrder.customer._id = new ObjectID(newSalesOrder.customer._id);
   newSalesOrder.products.forEach(product => {
-    product._id = new ObjectID(product._id);
+    product._id = product._id ? new ObjectID(product._id) : product._id;
   });
   newSalesOrder.createdAt = createdAt;
   newSalesOrder.createdBy = createdBy;
@@ -237,14 +230,16 @@ const rootPost = (req, res) => {
     const insertPatchesResult = yield db.collection('salesOrderPatches').insert(patches);
     writeStatus.insertPatches = 'done';
     yield coForEach(productIds, function*(id) {
-      const updateOneInventoryItemResult = yield db.collection('inventory').updateOne({_id: id}, {
-        $set: {
-          'isInStock': false,
-          'outputTo': 'salesOrders',
-          'outputDate': createdAt,
-          'outputRef': salesOrderId
-        }
-      })
+      if (id) {
+        const updateOneInventoryItemResult = yield db.collection('inventory').updateOne({_id: id}, {
+          $set: {
+            'isInStock': false,
+            'outputTo': 'salesOrders',
+            'outputDate': createdAt,
+            'outputRef': salesOrderId
+          }
+        })
+      }
     });
     writeStatus.updateInventory = 'done';
     console.log(writeStatus);

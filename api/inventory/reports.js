@@ -62,6 +62,88 @@ module.exports = (req, res) => {
         }, []);
         break;
       case req.query.title === 'inStockAmount':
+        let inStockAmountV2 = yield db.collection('inventory').aggregate([
+          {$match: {
+            'isInStock': true,
+          }},
+          {$lookup: {
+            from: 'vehicles',
+            localField: 'vehicleId',
+            foreignField: '_id',
+            as: 'vehicle'
+          }},
+          {$unwind: '$vehicle'},
+          {$project: {
+            'key': {$concat: [
+              '$vehicle.vehicle.brand',
+              '$vehicle.vehicle.model',
+              '$typeId',
+            ]},
+            'vehicleType': '$vehicle.vehicle.vehicleType',
+            'typeId': 1,
+            '_id': 0
+          }},
+          {$lookup: {
+            from: 'pricesV2',
+            localField: 'key',
+            foreignField: 'key',
+            as: 'price'
+          }},
+          {$unwind: {
+            path: '$price',
+            preserveNullAndEmptyArrays: true
+          }},
+          {$group: {
+            _id: {
+              typeId: '$typeId',
+              vehicleType: '$vehicleType',
+            },
+            count: {$sum: 1},
+            amount: {$sum: '$price.number'}
+          }}
+        ]).toArray();
+        result = inStockAmountV2.reduce((acc, curr) => {
+          const currTab = curr._id.vehicleType;
+          const itemWithCurrTab = acc.find(item => item.tab === currTab);
+          if (itemWithCurrTab) {
+            itemWithCurrTab.data.push({
+              typeId: curr._id.typeId,
+              count: curr.count,
+              amount: curr.amount
+            })
+          } else {
+            acc.push({
+              tab: currTab,
+              data: [{
+                typeId: curr._id.typeId,
+                count: curr.count,
+                amount: curr.amount
+              }]
+            })
+          }
+          // add to tab-total
+          const totalTab = acc.find(item => item.tab === 'total');
+          const totalData = totalTab.data;
+          const totalDataThatType = totalData.find(iitem => iitem.typeId === curr._id.typeId);
+          if (totalDataThatType) {
+            totalDataThatType.count += curr.count,
+            totalDataThatType.amount += curr.amount
+          } else {
+            totalData.push({
+              typeId: curr._id.typeId,
+              count: curr.count,
+              amount: curr.amount
+            });
+          }
+          return acc;
+        }, [{
+          tab: 'total',
+          data: []
+        }]);
+
+
+        break;
+      case req.query.title === 'inStockAmount0':
         let inStockAmount = yield db.collection('inventory').aggregate([
           {$match: {
             'isInStock': true,

@@ -25,6 +25,41 @@ const rootGetDefault = (req, res, queryParams, keys) => {
       }},
       {$unwind: '$vehicle'},
       {$project: {
+        'key': {$concat: [
+          '$vehicle.vehicle.brand',
+          '$vehicle.vehicle.model',
+          '$typeId',
+        ]},
+        'typeId': 1,
+        'brand': '$vehicle.vehicle.brand',
+        'model': '$vehicle.vehicle.model',
+        'vehicleId': '$vehicle._id'
+      }},
+      {$lookup: {
+        from: 'pricesV2',
+        localField: 'key',
+        foreignField: 'key',
+        as: 'price'
+      }},
+      {$unwind: {
+        path: '$price',
+        preserveNullAndEmptyArrays: true
+      }},
+      {$project: {
+        'key': 1, 'typeId': 1, 'price': '$price.number',
+        'brand': 1, 'model': 1, 'vehicleId': 1
+      }},
+    ]).toArray();
+    const results0 = yield db.collection('inventory').aggregate([
+      {$match: dbQuery},
+      {$lookup: {
+        from: 'vehicles',
+        localField: 'vehicleId',
+        foreignField: '_id',
+        as: 'vehicle'
+      }},
+      {$unwind: '$vehicle'},
+      {$project: {
         'isInStock': 1,
         'isReadyForSale': 1,
         'typeId': 1,
