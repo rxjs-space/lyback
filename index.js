@@ -1,6 +1,6 @@
 const express = require('express');  
 const app = express();
-
+const ip = '192.168.0.88';
 let server;
 
 if (process.env.SERVER === 'HEROKU') {
@@ -50,7 +50,11 @@ app.use((req, res, next) => {
 })
 
 const localHostInArr = process.env.LOCAL_HOST ? process.env.LOCAL_HOST : [];
-const origins = ['http://lynx0421.coding.me', 'https://lynx0421.coding.me', 'http://localhost:3000', 'https://localhost:3000'].concat(localHostInArr);
+const origins = [
+  'http://lynx0421.coding.me', 'https://lynx0421.coding.me', 
+  'http://localhost:3000', 'https://localhost:3000',
+  `https://${ip}:3000`,
+].concat(localHostInArr);
 app.use(cors({
   origin: origins
 }));
