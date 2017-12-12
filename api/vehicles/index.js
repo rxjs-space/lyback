@@ -57,70 +57,70 @@ const prepareNewVehicle = (originalNewVehicle) => {
   return newVehicle;
 }
 
-const getVtbmymIdPromise = (db, patches, newVehicle) => {
-  return new Promise((resolve, reject) => {
-    co(function*() {
-      const vtbmymPatch = patches.patches.find(p => p.path.indexOf('vtbmym') > -1);
-      // if (vtbmymPatch.value === 'new') {
-        let vehicleType, brand, model, registrationDate, year, month;
-        if (newVehicle) {
-          vehicleType = newVehicle.vehicle.vehicleType;
-          brand = newVehicle.vehicle.brand;
-          model = newVehicle.vehicle.model;
-          registrationDate = newVehicle.vehicle.registrationDate;
-          if (registrationDate instanceof Date) {
-            year = registrationDate.toISOString().substring(0, 4);
-            month = registrationDate.toISOString().substring(4, 2);
-          } else {
-            year = registrationDate.substring(0, 4);
-            month = registrationDate.substring(4, 2);
-          }
-        } else {
-          const vin = patches.vin;
-          const findVehicleResult = yield db.collection('vehicles').find({vin}).toArray();
-          const oldVehicle = findVehicleResult[0];
-          vehicleType = oldVehicle.vehicle.vehicleType;
-          const brandPatch = patches.patches.find(p => p.path.indexOf('brand') > -1);
-          brand = brandPatch ? brandPatch.value : oldVehicle.vehicle.brand;
-          // console.log('brand old', oldVehicle.vehicle.brand);
-          // console.log(brandPatch);
-          const modelPatch = patches.patches.find(p => p.path.indexOf('model')) > -1;
-          model = modelPatch ? modelPatch.value : oldVehicle.vehicle.model;
-          const registrationDatePatch = patches.patches.find(p => p.path.indexOf('registrationDate') > -1);
-          registrationDate = registrationDatePatch ? registrationDatePatch.value : oldVehicle.vehicle.registrationDate;
-          if (registrationDate instanceof Date) {
-            year = registrationDate.toISOString().substring(0, 4);
-            month = registrationDate.toISOString().substring(4, 2);
-          } else {
-            year = registrationDate.substring(0, 4);
-            month = registrationDate.substring(4, 2);
-          }
-          // console.log(vehicleType, brand, model, year, month);
-        }
+// const getVtbmymIdPromise = (db, patches, newVehicle) => {
+//   return new Promise((resolve, reject) => {
+//     co(function*() {
+//       const vtbmymPatch = patches.patches.find(p => p.path.indexOf('vtbmym') > -1);
+//       // if (vtbmymPatch.value === 'new') {
+//         let vehicleType, brand, model, registrationDate, year, month;
+//         if (newVehicle) {
+//           vehicleType = newVehicle.vehicle.vehicleType;
+//           brand = newVehicle.vehicle.brand;
+//           model = newVehicle.vehicle.model;
+//           registrationDate = newVehicle.vehicle.registrationDate;
+//           if (registrationDate instanceof Date) {
+//             year = registrationDate.toISOString().substring(0, 4);
+//             month = registrationDate.toISOString().substring(4, 2);
+//           } else {
+//             year = registrationDate.substring(0, 4);
+//             month = registrationDate.substring(4, 2);
+//           }
+//         } else {
+//           const vin = patches.vin;
+//           const findVehicleResult = yield db.collection('vehicles').find({vin}).toArray();
+//           const oldVehicle = findVehicleResult[0];
+//           vehicleType = oldVehicle.vehicle.vehicleType;
+//           const brandPatch = patches.patches.find(p => p.path.indexOf('brand') > -1);
+//           brand = brandPatch ? brandPatch.value : oldVehicle.vehicle.brand;
+//           // console.log('brand old', oldVehicle.vehicle.brand);
+//           // console.log(brandPatch);
+//           const modelPatch = patches.patches.find(p => p.path.indexOf('model')) > -1;
+//           model = modelPatch ? modelPatch.value : oldVehicle.vehicle.model;
+//           const registrationDatePatch = patches.patches.find(p => p.path.indexOf('registrationDate') > -1);
+//           registrationDate = registrationDatePatch ? registrationDatePatch.value : oldVehicle.vehicle.registrationDate;
+//           if (registrationDate instanceof Date) {
+//             year = registrationDate.toISOString().substring(0, 4);
+//             month = registrationDate.toISOString().substring(4, 2);
+//           } else {
+//             year = registrationDate.substring(0, 4);
+//             month = registrationDate.substring(4, 2);
+//           }
+//           // console.log(vehicleType, brand, model, year, month);
+//         }
 
-        let vtbmymId;
-        const vtbmymFindResult = yield db.collection('vtbmym').find({
-          vehicleType, brand, model, year, month
-        }).toArray();
+//         let vtbmymId;
+//         const vtbmymFindResult = yield db.collection('vtbmym').find({
+//           vehicleType, brand, model, year, month
+//         }).toArray();
 
-        if (vtbmymFindResult.length) {
-          vtbmymId = vtbmymFindResult[0]['_id'];
-        } else {
-          const vtbmymInsertResult = yield db.collection('vtbmym').insert({
-            vehicleType, brand, model, year, month
-          });
-          vtbmymId = vtbmymInsertResult['insertedIds'][0];
-        }
+//         if (vtbmymFindResult.length) {
+//           vtbmymId = vtbmymFindResult[0]['_id'];
+//         } else {
+//           const vtbmymInsertResult = yield db.collection('vtbmym').insert({
+//             vehicleType, brand, model, year, month
+//           });
+//           vtbmymId = vtbmymInsertResult['insertedIds'][0];
+//         }
 
-        resolve(vtbmymId);
-      // } else {
-      //   resolve(null);
-      // }
+//         resolve(vtbmymId);
+//       // } else {
+//       //   resolve(null);
+//       // }
 
-    }).catch(error => reject(error));
+//     }).catch(error => reject(error));
 
-  })
-}
+//   })
+// }
 
 
 const createPreDismantlingOrderPromise = (db, vehicle) => {
@@ -155,7 +155,7 @@ const createPreDismantlingOrderPromise = (db, vehicle) => {
     confirmDismantlingCompleted: false,
     progressPercentage: 0,
     inventoryInputDone: true,
-    vtbmym: vehicle.vtbmym,
+    // vtbmym: vehicle.vtbmym,
     createdAt: vehicle.createdAt,
     createdBy: vehicle.createdBy
   };
@@ -189,13 +189,13 @@ router.post('/', (req, res) => {
     patches.createdBy = newVehicle.createdBy;
     patches.vin = newVehicle.vin;
 
-    const vtbmymPatch = patches.patches.find(p => p.path.indexOf('vtbmym') > -1);
-    console.log('vtbmymPatch', vtbmymPatch);
-    if (vtbmymPatch && vtbmymPatch.value === 'new') {
-      const vtbmymId = yield getVtbmymIdPromise(db, patches, newVehicle);
-      newVehicle.vtbmym = vtbmymId;
-      vtbmymPatch.value = vtbmymId;
-    }
+    // const vtbmymPatch = patches.patches.find(p => p.path.indexOf('vtbmym') > -1);
+    // console.log('vtbmymPatch', vtbmymPatch);
+    // if (vtbmymPatch && vtbmymPatch.value === 'new') {
+    //   const vtbmymId = yield getVtbmymIdPromise(db, patches, newVehicle);
+    //   newVehicle.vtbmym = vtbmymId;
+    //   vtbmymPatch.value = vtbmymId;
+    // }
 
     const patchResult = yield db.collection('vehiclePatches').insert(patches);
     console.log('patches inserted');
@@ -294,7 +294,7 @@ const rootGetDefault = (req, res, queryParams, keys) => {
       'entranceStatus': 1,
       'entranceDate': 1,
       'surveyRounds': 1,
-      'vtbmym': 1,
+      // 'vtbmym': 1,
       'estimatedSurveyDateFirst': 1,
       'estimatedSurveyDateSecond': 1,
       'status': 1,
@@ -623,11 +623,11 @@ router.patch('/one', (req, res) => {
     patches.vin = vin;
     patches.vehicleId = vehicleId;
 
-    const vtbmymPatch = patches.patches.find(p => p.path.indexOf('vtbmym') > -1);
-    if (vtbmymPatch && vtbmymPatch.value === 'new') {
-      const vtbmymId = yield getVtbmymIdPromise(db, patches);
-      vtbmymPatch.value = vtbmymId;
-    }
+    // const vtbmymPatch = patches.patches.find(p => p.path.indexOf('vtbmym') > -1);
+    // if (vtbmymPatch && vtbmymPatch.value === 'new') {
+    //   const vtbmymId = yield getVtbmymIdPromise(db, patches);
+    //   vtbmymPatch.value = vtbmymId;
+    // }
 
 
     const patchesToApply = toMongodb(patches.patches);

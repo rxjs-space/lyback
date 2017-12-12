@@ -107,7 +107,7 @@ router.post('/', (req, res) => {
 
   const newDismantlingOrder = req.body.dismantlingOrder;
   newDismantlingOrder.vehicleId = new ObjectID(newDismantlingOrder.vehicleId);
-  newDismantlingOrder.vtbmym = new ObjectID(newDismantlingOrder.vtbmym);
+  // newDismantlingOrder.vtbmym = new ObjectID(newDismantlingOrder.vtbmym);
   newDismantlingOrder.planners = newDismantlingOrder.planners.map(p => new ObjectID(p));
   newDismantlingOrder.productionOperators = newDismantlingOrder.productionOperators.map(p => new ObjectID(p));
   newDismantlingOrder.qualityInspectors = newDismantlingOrder.qualityInspectors.map(p => new ObjectID(p));
@@ -395,7 +395,7 @@ const insertInventoryAndUpdateDismantlingOrder = (db, updatedDismantlingOrder, r
           for (let i = 0; i < curr.value.productionCount; i++) {
             const newIventoryItem = {
               vehicleId: updatedDismantlingOrder.vehicleId,
-              vtbmym: updatedDismantlingOrder.vtbmym,
+              // vtbmym: updatedDismantlingOrder.vtbmym,
               typeId,
               inputDate: patchedAt,
               isInStock: true,
@@ -413,7 +413,7 @@ const insertInventoryAndUpdateDismantlingOrder = (db, updatedDismantlingOrder, r
           // record count for 'waste' item
           const newIventoryItem = {
             vehicleId: updatedDismantlingOrder.vehicleId,
-            vtbmym: updatedDismantlingOrder.vtbmym,
+            // vtbmym: updatedDismantlingOrder.vtbmym,
             typeId,
             inputDate: patchedAt,
             isInStock: true,
