@@ -170,17 +170,11 @@ module.exports = (req, res) => {
         const calculateTotal = (soldWithoutId, inStockWithoutPrice, inStockWithPrice) => {
           // get an array of all the typeIds Set
           // combine three together, with a minus for soldWithoutId
-          const typeIds0 = new Set(soldWithoutId.map(i => i.typeId));
-          const typeIds1 = new Set(inStockWithoutPrice.map(i => i.typeId));
-          const typeIds2 = new Set(inStockWithPrice.map(i => i.typeId));
-          const typeIdsSet = new Set(typeIds0);
-          for (var elem of typeIds1) {
-            typeIds0.add(elem);
-          }
-          for (var elem of typeIds2) {
-            typeIds0.add(elem);
-          }
-          const typeIdsArray = Array.from(typeIdsSet);
+          const typeIdsSet = new Set([
+            ...soldWithoutId.map(i => i.typeId),
+            ...inStockWithoutPrice.map(i => i.typeId),
+            ...inStockWithPrice.map(i => i.typeId)
+          ]);
 
           const arrayXToObj = (arrayX) => {
             return arrayX.reduce((acc, curr) => {
@@ -196,8 +190,7 @@ module.exports = (req, res) => {
           const getNumber = (obj, typeId, key) => {
             return obj[typeId] ? (obj[typeId][key] ? obj[typeId][key] : 0) : 0;
           }
-
-          const inStock = Array.from(typeIdsArray).map(typeId => ({
+          const inStock = Array.from(typeIdsSet).map(typeId => ({
             typeId,
             count: 
               getNumber(soldWithoutIdObj, typeId, ['count']) * (-1) + 

@@ -86,3 +86,7 @@ mongorestore --host 127.0.0.1 dump-20171017-0726/
 http://voidcanvas.com/create-ssl-https-server-in-nodejs/
 openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout privateKey.key -out certificate.crt
 last key generated on 20171205
+
+
+## clone a collection
+db.inventory.aggregate([ { $match: {} }, { $out: "inventoryCopy" } ])
