@@ -226,6 +226,7 @@ const rootPost = (req, res) => {
     const salesOrderId = insertItemResult.insertedIds[0];
     writeStatus.insertItem = 'done';
     writeStatus.itemId = salesOrderId;
+    writeStatus.createdAt = createdAt;
     patches.salesOrderId = salesOrderId;
     const insertPatchesResult = yield db.collection('salesOrderPatches').insert(patches);
     writeStatus.insertPatches = 'done';
@@ -250,28 +251,44 @@ const rootPost = (req, res) => {
 
 }
 
-const preparePatches = (patches) => {
+const preparePatches = (patches, thatTime, thatUser) => {
+  let paidAtPatch;
   patches.forEach(patch => {
+    // if ((patch.path.indexOf('Notes') > -1) && patch.op === 'add') {
+    //   patch.op = 'replace';
+    // }
     if ((patch.path.indexOf('Notes') > -1) && patch.op === 'add') {
       patch.op = 'replace';
     }
-  })
-  return patches;
+    if ((patch.path.indexOf('paid') > -1) && patch.value) {
+      paidAtPatch = {op: 'replace', path: '/paidAt', value: thatTime}
+    }
+  });
+  const patchesInter = patches.concat([
+    {op: 'replace', path: '/modifiedAt', value: thatTime},
+    {op: 'replace', path: '/modifiedBy', value: thatUser}
+  ]);
+  if (paidAtPatch) {
+    return patchesInter.concat([paidAtPatch]);
+  } else {
+    return patchesInter;
+  }
 }
 
 const rootPatch = (req, res) => {
+  console.log(req.body.patches);
   if (!req.body || !req.body._id || !req.body.patches) {
     return res.status(400).json({
       message: 'no data or no _id provided.'
     })
   }
-  const modifiedAt = new Date();
-  const modifiedBy = req.user._id;
+  const thatTime = new Date();
+  const thatUser = req.user._id;
   const itemId = req.body._id;
   const patches = {
-    patches: preparePatches(req.body.patches),
-    createdAt: modifiedAt,
-    createdBy: modifiedBy
+    patches: preparePatches(req.body.patches, thatTime, thatUser),
+    createdAt: thatTime,
+    createdBy: thatUser
   };
   const patchesToApply = toMongodb(patches.patches);
   const writeStatus = {
