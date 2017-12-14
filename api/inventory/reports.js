@@ -62,6 +62,164 @@ module.exports = (req, res) => {
         }, []);
         break;
       case req.query.title === 'inStockAmount':
+        const transform = (arrayOld) => {
+          return arrayOld.map(item => ({
+            typeId: item._id.typeId,
+            count: item.count,
+            amount: item.amount
+          }));
+        }
+        let soldWithoutIdAmount = yield db.collection('salesOrders').aggregate([
+          {$unwind: '$products'},
+          {$match: {
+            'products._id': '',
+          }},
+          {$group: {
+            _id: {
+              typeId: '$products.typeId',
+            },
+            count: {$sum: 1},
+            amount: {$sum: '$products.price'}
+          }}
+        ]).toArray();
+        let inStockAmountIntermediateWithoutPrice = yield db.collection('inventory').aggregate([
+          {$match: {
+            'isInStock': true,
+          }},
+          {$lookup: {
+            from: 'vehicles',
+            localField: 'vehicleId',
+            foreignField: '_id',
+            as: 'vehicle'
+          }},
+          {$unwind: '$vehicle'},
+          {$project: {
+            'key': {$concat: [
+              '$vehicle.vehicle.brand',
+              '$vehicle.vehicle.model',
+              '$typeId',
+            ]},
+            'typeId': 1,
+            '_id': 0
+          }},
+          {$lookup: {
+            from: 'pricesV2',
+            localField: 'key',
+            foreignField: 'key',
+            as: 'price'
+          }},
+          {$unwind: {
+            path: '$price',
+            preserveNullAndEmptyArrays: true
+          }},
+          {$match: {
+            'price': {$exists: false},
+          }},
+          {$group: {
+            _id: {
+              typeId: '$typeId',
+            },
+            count: {$sum: 1},
+            amount: {$sum: '$price.number'}
+          }}
+        ]).toArray();
+        let inStockAmountIntermediateWithPrice = yield db.collection('inventory').aggregate([
+          {$match: {
+            'isInStock': true,
+          }},
+          {$lookup: {
+            from: 'vehicles',
+            localField: 'vehicleId',
+            foreignField: '_id',
+            as: 'vehicle'
+          }},
+          {$unwind: '$vehicle'},
+          {$project: {
+            'key': {$concat: [
+              '$vehicle.vehicle.brand',
+              '$vehicle.vehicle.model',
+              '$typeId',
+            ]},
+            'typeId': 1,
+            '_id': 0
+          }},
+          {$lookup: {
+            from: 'pricesV2',
+            localField: 'key',
+            foreignField: 'key',
+            as: 'price'
+          }},
+          {$unwind: {
+            path: '$price',
+            preserveNullAndEmptyArrays: true
+          }},
+          {$match: {
+            'price': {$exists: true},
+          }},
+          {$group: {
+            _id: {
+              typeId: '$typeId',
+            },
+            count: {$sum: 1},
+            amount: {$sum: '$price.number'}
+          }}
+        ]).toArray();
+        soldWithoutIdAmount = transform(soldWithoutIdAmount);
+        inStockAmountIntermediateWithoutPrice = transform(inStockAmountIntermediateWithoutPrice);
+        inStockAmountIntermediateWithPrice = transform(inStockAmountIntermediateWithPrice);
+        const calculateTotal = (soldWithoutId, inStockWithoutPrice, inStockWithPrice) => {
+          // get an array of all the typeIds Set
+          // combine three together, with a minus for soldWithoutId
+          const typeIds0 = new Set(soldWithoutId.map(i => i.typeId));
+          const typeIds1 = new Set(inStockWithoutPrice.map(i => i.typeId));
+          const typeIds2 = new Set(inStockWithPrice.map(i => i.typeId));
+          const typeIdsSet = new Set(typeIds0);
+          for (var elem of typeIds1) {
+            typeIds0.add(elem);
+          }
+          for (var elem of typeIds2) {
+            typeIds0.add(elem);
+          }
+          const typeIdsArray = Array.from(typeIdsSet);
+
+          const arrayXToObj = (arrayX) => {
+            return arrayX.reduce((acc, curr) => {
+              acc[curr.typeId] = {count: curr.count, amount: curr.amount};
+              return acc;
+            }, {})
+          }
+
+          const soldWithoutIdObj = arrayXToObj(soldWithoutId);
+          const inStockWithoutPriceObj = arrayXToObj(inStockWithoutPrice);
+          const inStockWithPriceObj = arrayXToObj(inStockWithPrice);
+
+          const getNumber = (obj, typeId, key) => {
+            return obj[typeId] ? (obj[typeId][key] ? obj[typeId][key] : 0) : 0;
+          }
+
+          const inStock = Array.from(typeIdsArray).map(typeId => ({
+            typeId,
+            count: 
+              getNumber(soldWithoutIdObj, typeId, ['count']) * (-1) + 
+              getNumber(inStockWithoutPriceObj, typeId, ['count']) + 
+              getNumber(inStockWithPriceObj, typeId, ['count']),
+            amount: 
+              getNumber(soldWithoutIdObj, typeId, ['amount']) * (-1) + 
+              getNumber(inStockWithoutPriceObj, typeId, ['amount']) + 
+              getNumber(inStockWithPriceObj, typeId, ['amount'])
+          }));
+
+          return inStock;
+        };
+        const inStock = calculateTotal(soldWithoutIdAmount, inStockAmountIntermediateWithoutPrice, inStockAmountIntermediateWithPrice);
+        result = [
+          {tab: 'inStock', data: inStock},
+          {tab: 'inStockAmountIntermediateWithPrice', data: inStockAmountIntermediateWithPrice},
+          {tab: 'inStockAmountIntermediateWithoutPrice', data: inStockAmountIntermediateWithoutPrice},
+          {tab: 'soldWithoutIdAmount', data: soldWithoutIdAmount},
+        ];
+        break;
+      case req.query.title === 'inStockAmount1':
         let inStockAmountV2 = yield db.collection('inventory').aggregate([
           {$match: {
             'isInStock': true,
