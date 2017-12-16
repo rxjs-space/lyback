@@ -85,7 +85,7 @@ module.exports = (req, res) => {
         let inStockAmountIntermediateWithoutPrice = yield db.collection('inventory').aggregate([
           {$match: {
             'isInStock': true,
-            'group': part
+            'group': 'part'
           }},
           {$lookup: {
             from: 'vehicles',
@@ -127,7 +127,7 @@ module.exports = (req, res) => {
         let inStockAmountIntermediateWithPrice = yield db.collection('inventory').aggregate([
           {$match: {
             'isInStock': true,
-            'group': part
+            'group': 'part'
           }},
           {$lookup: {
             from: 'vehicles',
