@@ -3,6 +3,7 @@ const router = require('express').Router();
 const jwt = require("jwt-simple"); 
 const co = require('co');
 const coForEach = require('co-foreach');
+const ObjectID = require('mongodb').ObjectID;
 const myAcl = require('../../my-acl');
 
 const dbX = require('../../db');
@@ -36,6 +37,50 @@ const resources = [
   '/api/versions', '/api/versions/compare'
 ];
 
+const postSearch = (req, res) => {
+  /**
+   * returns a role
+   * Role {
+   *   key: string;
+   *   users: User[];
+   *   parents: string[];
+   *   resources: any[];
+   * }
+   */
+  if (!req.body || !req.body.roleName) {
+    return res.status(400).json({
+      message: 'Insufficient params provided.'
+    });
+  }
+  const roleName = req.body.roleName;
+  const role = {};
+  co(function*() {
+    const db = yield dbX.dbPromise;
+    const aclInstance = yield myAcl.aclInstancePromise;
+    const roleUsersObj = yield db.collection('acl_roles').findOne({key: roleName}, {_id: 0, key: 0});
+    if (!roleUsersObj) {
+      return res.status(400).json({
+        message: `no such role as '${roleName}'.`
+      })
+    }
+    const roleUserIds = Object.keys(roleUsersObj).reduce((acc, curr) => {
+      return roleUsersObj[curr] ? [...acc, curr] : [...acc];
+    }, []).map(id => new ObjectID(id));
+    const roleUsers = yield db.collection('users').find({_id: {$in: roleUserIds}}, {password: 0, settings: 0}).toArray();
+    role.key = roleName;
+    role.users = roleUsers;
+    const roleResources = yield aclInstance.whatResources(roleName);
+    role.resources = roleResources;
+    const roleParents = yield db.collection('acl_parents').findOne({key: roleName}, {_id: 0, key: 0});
+    role.parents = roleParents;
+    res.json(role);
+  }).catch(err => {
+    return res.status(500).json(err.stack);
+  })
+}
+
+router.post('/search', postSearch);
+
 router.post('/', function(req, res) {
   res.send('at roles');
 });
@@ -43,9 +88,12 @@ router.post('/', function(req, res) {
 router.get('/', (req, res) => {
   co(function*() {
     const db = yield dbX.dbPromise;
-    const rolesObjList = yield db.collection('acl_roles').find({}, {_id: 0, key: 1}).toArray();
-    const rolesList = rolesObjList.map(item => item.key);
-    res.json(rolesList);
+    const rolesObjList = yield db.collection('acl_roles').find({}, {_id: 0}).toArray();
+    const rolesNameCountList = rolesObjList.map(roleObj => ({
+      name: roleObj.key,
+      count: Object.keys(roleObj).length - 1
+    }));
+    res.json(rolesNameCountList);
   }).catch(function(err) {
     return res.status(500).json(err.stack);
   });
