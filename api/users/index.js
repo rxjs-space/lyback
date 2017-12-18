@@ -3,13 +3,58 @@ const bcrypt = require('bcrypt');
 const jwt = require("jwt-simple"); 
 const co = require('co');
 const ObjectID = require('mongodb').ObjectID;
+const MongoError = require('mongodb').MongoError;
+
 const toMongodb = require('jsonpatch-to-mongodb');
 
 const myAcl = require('../../my-acl');
 
 const dbX = require('../../db');
+const collectionName = 'users';
 
 const saltRounds = 10;
+
+const postSearch = (req, res) => {
+
+  if (!req.body) {
+    return res.status(400).json({
+      message: 'No search params provided.'
+    });
+  }
+  const searchParams = JSON.parse(JSON.stringify(req.body));
+  const isFindOne = !!searchParams._id;
+
+
+  co(function*() {
+    const db = yield dbX.dbPromise;
+    let project, searchResult;
+    if (isFindOne) {
+      searchParams._id = new ObjectID(searchParams._id);
+      projection = {password: 0};
+      searchResult = yield db.collection(collectionName).find(searchParams, projection).toArray();
+      if (searchResult.length) {
+        // get userRoles
+        const aclInstance = yield myAcl.aclInstancePromise;
+        const userRoles = yield aclInstance.userRoles(req.body._id);
+        searchResult[0]['roles'] = userRoles;
+      }
+    } else {
+      projection = {password: 0, settings: 0};
+      searchResult = yield db.collection(collectionName).find(searchParams, projection).toArray();
+    }
+    return res.json(searchResult);
+  }).catch(error => {
+    if (error instanceof MongoError) {
+      // front end will check if error contains error code like 'E11000' using error.indexOf
+      return res.status(500).json(error.toString());
+    } else {
+      return res.status(500).json(error.stack);
+    }
+  })
+
+}
+
+router.post('/search', postSearch);
 
 /* 
   GET /
@@ -40,7 +85,9 @@ router.get('/', (req, res) => {
 
 })
 
-router.patch('/one', (req, res) => {
+
+
+router.patch('/', (req, res) => {
   // a user can edit its own record
   // a admin can edit all the records
   const editorUserId = req.user._id; // this is an ObjectID instance
@@ -69,13 +116,62 @@ router.patch('/one', (req, res) => {
       return res.status(401).json({error: 'not authorized'});
     } else {
       console.log('patches', req.body.patches);
-      const patchesToApply = toMongodb(req.body.patches);
-      console.log('patchesToApply', patchesToApply);
-      const patchResult = yield db.collection('users').updateOne(
-        {_id: new ObjectID(targetUserId)},
-        patchesToApply
-      );
-      res.json(patchResult);
+      const rolesToAdd = [];
+      const rolesIndexToRemove = [];
+      const patchesX = [];
+      req.body.patches.forEach(p => {
+        switch (true) {
+          case p.path.indexOf('roles') > -1 && (p.op === 'replace' || p.op === 'add'):
+            rolesToAdd.push(p.value);
+            break;
+          case p.path.indexOf('roles') > -1 && (p.op === 'remove'):
+            rolesIndexToRemove.push(+p.path.split('/')[2]);
+            break;
+          case p.path.indexOf('password') > -1:
+            // hash pasword
+            const pX = JSON.parse(JSON.stringify(p));
+            patchesX.push(p);
+            break;
+          default:
+            patchesX.push(p);
+        }
+      })
+      let patchResultR = {};
+      let patchResultX;
+      // deal with roles changes
+      if (rolesToAdd.length || rolesIndexToRemove.length) {
+      const aclInstance = yield myAcl.aclInstancePromise;
+      const userRolesBefore = yield aclInstance.userRoles(targetUserId);
+      // deal with removed roles
+      let userRolesAfter = rolesIndexToRemove.length ? userRolesBefore.reduce((acc, curr, index) => {
+        if (rolesIndexToRemove.indexOf(index) === -1) {
+          acc.push(curr);
+        }
+        return acc;
+      }, []) : JSON.parse(JSON.stringify(userRolesBefore));
+      userRolesAfter = [...userRolesAfter, ...rolesToAdd]; // not caring the duplicated ones, acl.addUserRoles will ignore them
+      // console.log(userRolesBefore);
+      // console.log(rolesToAdd);
+      // console.log(rolesIndexToRemove);
+      // console.log(userRolesAfter);
+      // reset roles by remove all and adding userRolesAfter
+      yield aclInstance.removeUserRoles(targetUserId, userRolesBefore);
+      yield aclInstance.addUserRoles(targetUserId, userRolesAfter);
+      patchResultR.roles = 'done';
+      }
+
+      // deal with the rest
+      if (patchesX.length) {
+        const patchesToApply = toMongodb(req.body.patches);
+        console.log('patchesToApply', patchesToApply);
+        // todo: deal with password
+        patchResultX = yield db.collection('users').updateOne(
+          {_id: new ObjectID(targetUserId)},
+          patchesToApply
+        );
+      }
+
+      res.json(Object.assign({}, patchResultX, patchResultR));
     }
   }).catch(err => {
     return res.status(500).json(err.stack);
