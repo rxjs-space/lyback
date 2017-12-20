@@ -21,7 +21,7 @@ module.exports = (req, res) => {
             'createdAt': {$gte: new Date(`${sevenDaysAgoDate}T16:00:00.000Z`)},
           }},
           {$project: {
-            'discountPercent': 1,
+            // 'discountPercent': 1,
             'products': 1,
             'createdAtBeijingTime': {$add: ['$createdAt', 1000 * 60 * 60 * 8]}
           }},
@@ -29,20 +29,20 @@ module.exports = (req, res) => {
           {$group: {
             _id: '$_id',
             createdAtBeijingTime: {$first: '$createdAtBeijingTime'},
-            discountPercent: {$first: '$discountPercent'},
-            amount: {$sum: '$products.price'}
+            // discountPercent: {$first: '$discountPercent'},
+            amount: {$sum: {$multiply: ['$products.priceFinal', '$products.count']}}
           }},
-          {$project: {
-            '_id': 1,
-            'createdAtBeijingTime': 1,
-            'amount': {$ceil: {$multiply: [
-              {$subtract: [
-                1, 
-                {$divide: ['$discountPercent', 100]},
-              ]},
-              '$amount'
-            ]}},
-          }},
+          // {$project: {
+          //   '_id': 1,
+          //   'createdAtBeijingTime': 1,
+          //   'amount': {$ceil: {$multiply: [
+          //     {$subtract: [
+          //       1, 
+          //       {$divide: ['$discountPercent', 100]},
+          //     ]},
+          //     '$amount'
+          //   ]}},
+          // }},
           {$group: {
             _id: {
               createdAtBeijingDate: {$dateToString: {format: '%Y-%m-%d', date: '$createdAtBeijingTime'}}
@@ -75,7 +75,7 @@ module.exports = (req, res) => {
             'createdAt': {$gte: dateBeginning},
           }},
           {$project: {
-            'discountPercent': 1,
+            // 'discountPercent': 1,
             'products': 1,
             'createdAtBeijingTime': {$add: ['$createdAt', 1000 * 60 * 60 * 8]}
           }},
@@ -83,20 +83,20 @@ module.exports = (req, res) => {
           {$group: {
             _id: '$_id',
             createdAtBeijingTime: {$first: '$createdAtBeijingTime'},
-            discountPercent: {$first: '$discountPercent'},
-            amount: {$sum: '$products.price'}
+            // discountPercent: {$first: '$discountPercent'},
+            amount: {$sum: {$multiply: ['$products.priceFinal', '$products.count']}}
           }},
-          {$project: {
-            '_id': 1,
-            'createdAtBeijingTime': 1,
-            'amount': {$ceil: {$multiply: [
-              {$subtract: [
-                1, 
-                {$divide: ['$discountPercent', 100]},
-              ]},
-              '$amount'
-            ]}},
-          }},          
+          // {$project: {
+          //   '_id': 1,
+          //   'createdAtBeijingTime': 1,
+          //   'amount': {$ceil: {$multiply: [
+          //     {$subtract: [
+          //       1, 
+          //       {$divide: ['$discountPercent', 100]},
+          //     ]},
+          //     '$amount'
+          //   ]}},
+          // }},          
           {$group: {
             _id: {
               createdAtBeijingWeek: {$dateToString: {format: '%V', date: '$createdAtBeijingTime'}}
