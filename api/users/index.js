@@ -140,24 +140,24 @@ router.patch('/', (req, res) => {
       let patchResultX;
       // deal with roles changes
       if (rolesToAdd.length || rolesIndexToRemove.length) {
-      const aclInstance = yield myAcl.aclInstancePromise;
-      const userRolesBefore = yield aclInstance.userRoles(targetUserId);
-      // deal with removed roles
-      let userRolesAfter = rolesIndexToRemove.length ? userRolesBefore.reduce((acc, curr, index) => {
-        if (rolesIndexToRemove.indexOf(index) === -1) {
-          acc.push(curr);
-        }
-        return acc;
-      }, []) : JSON.parse(JSON.stringify(userRolesBefore));
-      userRolesAfter = [...userRolesAfter, ...rolesToAdd]; // not caring the duplicated ones, acl.addUserRoles will ignore them
-      // console.log(userRolesBefore);
-      // console.log(rolesToAdd);
-      // console.log(rolesIndexToRemove);
-      // console.log(userRolesAfter);
-      // reset roles by remove all and adding userRolesAfter
-      yield aclInstance.removeUserRoles(targetUserId, userRolesBefore);
-      yield aclInstance.addUserRoles(targetUserId, userRolesAfter);
-      patchResultR.roles = 'done';
+        const aclInstance = yield myAcl.aclInstancePromise;
+        const userRolesBefore = yield aclInstance.userRoles(targetUserId);
+        // deal with removed roles
+        let userRolesAfter = rolesIndexToRemove.length ? userRolesBefore.reduce((acc, curr, index) => {
+          if (rolesIndexToRemove.indexOf(index) === -1) {
+            acc.push(curr);
+          }
+          return acc;
+        }, []) : JSON.parse(JSON.stringify(userRolesBefore));
+        userRolesAfter = [...userRolesAfter, ...rolesToAdd]; // not caring the duplicated ones, acl.addUserRoles will ignore them
+        // console.log(userRolesBefore);
+        // console.log(rolesToAdd);
+        // console.log(rolesIndexToRemove);
+        // console.log(userRolesAfter);
+        // reset roles by remove all and adding userRolesAfter
+        yield aclInstance.removeUserRoles(targetUserId, userRolesBefore);
+        yield aclInstance.addUserRoles(targetUserId, userRolesAfter);
+        patchResultR.roles = 'done';
       }
 
       // deal with the rest

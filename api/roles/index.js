@@ -37,6 +37,16 @@ const resources = [
   '/api/versions', '/api/versions/compare'
 ];
 
+const patchRoot = (req, res) => {
+  if (!req.body || !req.body.key || !req.body.patches) {
+    return res.status(400).json({
+      message: 'Insufficient data provided.'
+    })
+  }
+}
+
+router.patch('/', patchRoot);
+
 const postSearch = (req, res) => {
   /**
    * returns a role

@@ -36,6 +36,15 @@ module.exports = {
       co(function*() {
         const aclInstance = yield self.aclInstancePromise;
         const id = req.user._id.toHexString();
+        yield aclInstance.removeResource('/api/inventory/');
+        yield aclInstance.removeResource('/api/tt0');
+        yield aclInstance.removeResource('/vehicles');
+        yield aclInstance.removeResource('vehicles');
+        yield aclInstance.removeResource('/api/tt1');
+        yield aclInstance.removeResource('*');
+        yield aclInstance.removeResource('brands/models/list');
+        yield aclInstance.removeResource('/api/types');
+
         yield aclInstance.allow('admin', '/api/roles/search', '*');
         yield aclInstance.allow('operationOperator', '/api/roles/search', ['post']);
         yield aclInstance.allow('operationOperator', '/api/users', ['patch']);
