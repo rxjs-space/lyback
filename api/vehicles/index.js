@@ -11,6 +11,7 @@ const getLastSundays = require('../../utils/last-sundays');
 const getLastMondays = require('../../utils/last-mondays');
 const getDaysAgoDate = require('../../utils').getDaysAgoDate;
 
+// new Date(`${thirtyFiveDaysAgoDate}T16:00:00.000Z`)
 const basedOnEntranceWeek = {
   'thisWeek': (dbQuery, lastSundays) => {
     dbQuery['entranceDate'] = {$gt: lastSundays['1']}
@@ -247,8 +248,9 @@ const rootGetDefault = (req, res, queryParams, keys) => {
   co(function*() {
     const db = yield dbX.dbPromise;
 
-    // const ttQueryResult = yield db.collection('tt').find({name: 'types'}).toArray();
-    // const vehicleTypeIdsForMotocycle = ttQueryResult[0]['vehicleTypeIdsForMotocycle'];
+    const ttQueryResult = yield db.collection('tt').find({name: 'types'}).toArray();
+    // spelling error: motor not moto
+    const vehicleTypeIdsForMotocycle = ttQueryResult[0]['vehicleTypeIdsForMotocycle'];
    
     let dbQuery = {};
     // turn req.query into dbQuery
@@ -280,6 +282,18 @@ const rootGetDefault = (req, res, queryParams, keys) => {
         case 'byIdList':
           const idList = queryParams[k].map(id => new ObjectID(id));
           dbQuery['_id'] = {$in: idList};
+          break;
+        case 'vehicle.vehicleType':
+          switch (queryParams[k]) {
+            case 'motorcycle':
+              dbQuery['vehicle.vehicleType'] = {$in: vehicleTypeIdsForMotocycle};
+              break;
+            case 'non-motorcycle':
+              dbQuery['vehicle.vehicleType'] = {$nin: vehicleTypeIdsForMotocycle};
+              break;
+            default:
+            dbQuery['vehicle.vehicleType'] = queryParams[k];
+          }
           break;
         default:
           dbQuery[k] = queryParams[k];
