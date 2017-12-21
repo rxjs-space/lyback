@@ -25,9 +25,31 @@ module.exports = (req, res) => {
         completedAt: 1
       }}
     ]).toArray();
+    
+    const dismantlingPrepareBatches = yield db.collection('dismantlingPrepareBatches').aggregate([
+      {$unwind: '$vehicles'},
+      {$match: {'vehicles.vehicleId': vehicleId}},
+      {$project: {
+        createdAt: 1
+      }}
+    ]).toArray();
+
+    const surveyBatches = yield db.collection('surveyBatches').aggregate([
+      {$unwind: '$vehicles'},
+      {$match: {'vehicles.vehicleId': vehicleId}},
+      {$project: {
+        success: '$vehicles.success',
+        surveyOrdinal: '$vehicles.surveyOrdinal',        
+        createdAt: 1,
+        completedAt: 1        
+      }}
+    ]).toArray();
+
     return res.json({
       // vehicleId,
-      paymentToOwnerBatches
+      paymentToOwnerBatches,
+      dismantlingPrepareBatches,
+      surveyBatches
     });
     // return res.json({ok: true});
   }).catch(error => {
