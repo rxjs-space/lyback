@@ -15,7 +15,7 @@ module.exports = (req, res) => {
   
   co(function*() {
     const db = yield dbX.dbPromise;
-    const paymentToOwnerResult = yield db.collection('paymentToOwnerBatches').aggregate([
+    const paymentToOwnerBatches = yield db.collection('paymentToOwnerBatches').aggregate([
       {$unwind: '$vehicles'},
       {$match: {'vehicles.vehicleId': vehicleId}},
       {$project: {
@@ -27,7 +27,7 @@ module.exports = (req, res) => {
     ]).toArray();
     return res.json({
       // vehicleId,
-      paymentToOwnerBatch: paymentToOwnerResult.length ? paymentToOwnerResult[0] : null
+      paymentToOwnerBatches
     });
     // return res.json({ok: true});
   }).catch(error => {
