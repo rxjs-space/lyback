@@ -18,7 +18,7 @@ const rootGet = (req, res) => {
     switch (true) {
       case req.query.recentOnly && JSON.parse(req.query.recentOnly):
         const sevenDaysAgoBeijingZeroHours = new Date(`${getDaysAgoDate(new Date(), 8)}T16:00:00.000Z`);
-        console.log(sevenDaysAgoBeijingZeroHours);
+        // console.log(sevenDaysAgoBeijingZeroHours);
         // get all batches which is created after sevenDaysAgoBeijingZero
         queryResult = yield db.collection('dismantlingPrepareBatches').aggregate([
           {$match: {
@@ -76,17 +76,19 @@ const rootPost = (req, res) => {
     })
   }
 
+  const thatUser = req.user._id;
+  const thatTime = new Date();
+
   co(function*() {
     const db = yield dbX.dbPromise;
     const vehicles = req.body.vehicleIds.map(id => ({
       vehicleId: new ObjectID(id)
     }));
-    const createdAt = new Date();
     const newBatch = {
       vehicles,
       completed: true, // no more ops needed, all d-prepare batch completes on creation
-      createdAt,
-      createdBy: req.user._id
+      createdAt: thatTime,
+      createdBy: thatUser
     };
 
     const saveResult = yield db.collection('dismantlingPrepareBatches').insert(newBatch);
@@ -96,14 +98,14 @@ const rootPost = (req, res) => {
     yield coForEach(req.body.vehicleIds, function*(vehicleId) {
       const vPatches = {
         patches: [
-          {op: 'replace', path: '/modifiedAt', value: newBatch.createdAt},
-          {op: 'replace', path: '/modifiedBy', value: newBatch.createdBy},
+          {op: 'replace', path: '/modifiedAt', value: thatTime},
+          {op: 'replace', path: '/modifiedBy', value: thatUser},
           {op: 'add', path: '/status2/dismantlingPrepareBatchIds', value: batchId},
           {op: 'replace', path: '/status/dismantlingPrepare/done', value: true},
-          {op: 'replace', path: '/status/dismantlingPrepare/date', value: newBatch.createdAt}
+          {op: 'replace', path: '/status/dismantlingPrepare/date', value: thatTime}
         ],
-        createdAt: newBatch.createdAt,
-        createdBy: newBatch.createdBy,
+        createdAt: thatTime,
+        createdBy: thatUser,
         trigger: 'dismantlingPrepareBatches',
         triggerRef: batchId,
         vehicleId
