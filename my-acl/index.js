@@ -45,6 +45,8 @@ module.exports = {
         yield aclInstance.removeResource('brands/models/list');
         yield aclInstance.removeResource('/api/types');
 
+        yield aclInstance.allow('admin', '/api/vehicles/status', '*');
+        yield aclInstance.allow('operationOperator', '/api/vehicles/status', ['get']);
         yield aclInstance.allow('admin', '/api/roles/search', '*');
         yield aclInstance.allow('operationOperator', '/api/roles/search', ['post']);
         yield aclInstance.allow('operationOperator', '/api/users', ['patch']);

@@ -2,6 +2,7 @@ const router = require('express').Router();
 const co = require('co');
 const toMongodb = require('jsonpatch-to-mongodb');
 const ObjectID = require('mongodb').ObjectID;
+const MongoError = require('mongodb').MongoError;
 
 const strContains = require('../../utils').strContains;
 const getMondayOfTheWeek = require('../../utils').getMondayOfTheWeek;
@@ -729,15 +730,25 @@ router.get('/search', (req, res) => {
   // res.send(req.query.key);
   co(function*() {
     const db = yield dbX.dbPromise;
-    let resultVINPlateNo = yield db.collection('vehicles').find({$or: [
+    const byVehicleCriteria = (key.length === 12 || key.length === 24) ? [
+      {_id: new ObjectID(key)},
       {vin: {$regex: key}},
       {'vehicle.plateNo': {$regex: key}},
-    ]}, {vin: 1, 'vehicle.plateNo': 1, _id: 0}).toArray();
+    ] : [
+      {vin: {$regex: key}},
+      {'vehicle.plateNo': {$regex: key}},
+    ];
+    let resultVINPlateNo = yield db.collection('vehicles').find(
+      {$or: byVehicleCriteria},
+      {vin: 1, 'vehicle.plateNo': 1, _id: 1}
+    ).toArray();
 
     resultVINPlateNo = resultVINPlateNo.map(item => ({
-      type: 'vp',
-      displayValue: `${item.vin} / ${item.vehicle.plateNo}`,
-      key: item.vin
+      type: 'vehicle',
+      // displayValue: `${item.vin} / ${item.vehicle.plateNo}`,
+      _id: item._id,
+      vin: item.vin,
+      plateNo: item.vehicle.plateNo
     }));
 
     let resultBatchId = yield db.collection('vehicles').aggregate([
@@ -750,9 +761,9 @@ router.get('/search', (req, res) => {
     ]).toArray();
 
     resultBatchId = resultBatchId.map(item => ({
-      type: 'vb',
-      displayValue: item._id.batchId,
-      key: item._id.batchId
+      type: 'batch',
+      // displayValue: item._id.batchId,
+      _id: item._id.batchId
     }));
 
     const result = [...resultBatchId, ...resultVINPlateNo];
@@ -789,5 +800,9 @@ router.get('/search', (req, res) => {
 
   
 })
+
+
+
+router.get('/status', require('./status'));
 
 module.exports = router;

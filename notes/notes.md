@@ -70,7 +70,8 @@ JSON.parse(JSON.parse(updateHash[k]['data'])) // need two stringifies, otherwise
 mongo ds161960.mlab.com:61960/longyundb -u <dbuser> -p <dbpassword>
 
 ## db backup
-mongoimport --host ds161960.mlab.com -d longyundb --port 61960 --username user --password pass --collection pws --file pws.json --jsonArray
+
+
 
 mongodump --host ds161960.mlab.com -d longyundb --port 61960 --username timliu --password 2858880 --excludeCollectionsWithPrefix acl
 
@@ -89,4 +90,11 @@ last key generated on 20171205
 
 
 ## clone a collection
-db.inventory.aggregate([ { $match: {} }, { $out: "inventoryCopy" } ])
+db.pws.aggregate([ { $match: {} }, { $out: "pwsCopy" } ])
+
+mongoexport -d longyundb -c pws --jsonArray --out pws.json
+mongoimport --host ds161960.mlab.com -d longyundb --port 61960 --username user --password pass --collection pws --file pws.json --jsonArray
+
+
+mongodump -d longyundb -c pws
+mongorestore --host ds054289.mlab.com --port 54289 --username tim --password go -d longyundb -c pws ./dump/longyundb/pws.bson

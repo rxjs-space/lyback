@@ -131,6 +131,10 @@ const rootPost = (req, res) => {
     })
   }
 
+  const thatUser = req.user._id;
+  const thatTime = new Date();
+  console.log(thatUser, thatTime);
+
   co(function*() {
     const db = yield dbX.dbPromise;
     const vehicles = req.body.vehicles.map(v => {
@@ -139,8 +143,8 @@ const rootPost = (req, res) => {
     })
     const newBatch = {
       vehicles: vehicles,
-      createdAt: (new Date()).toISOString(),
-      createdBy: req.user._id,
+      createdAt: thatTime,
+      createdBy: thatUser,
       completed: false
     };
 
@@ -153,8 +157,8 @@ const rootPost = (req, res) => {
       patches: [
         {op: 'replace', path: '/vehicles', value: vehicles},
       ],
-      patchedAt: newBatch.createdAt,
-      patchedBy: newBatch.createdBy
+      patchedAt: thatTime,
+      patchedBy: thatUser
     };
     const patchesSaveResult = yield db.collection(patchesCollectionName).insert(patches);
 
@@ -163,12 +167,12 @@ const rootPost = (req, res) => {
       const vehicleId = vehicle.vehicleId;
       const vPatches = {
         patches: [
-          {op: 'replace', path: '/modifiedAt', value: newBatch.createdAt},
-          {op: 'replace', path: '/modifiedBy', value: newBatch.createdBy},
+          {op: 'replace', path: '/modifiedAt', value: thatTime},
+          {op: 'replace', path: '/modifiedBy', value: thatUser},
           {op: 'add', path: '/status2/paymentToOwnerBatchIds', value: batchId}
         ],
-        createdAt: newBatch.createdAt,
-        createdBy: newBatch.createdBy,
+        createdAt: thatTime,
+        createdBy: thatUser,
         trigger: dataCollectionName,
         triggerRef: batchId,
         vehicleId
@@ -196,18 +200,25 @@ const rootPatch = (req, res) => {
     })
   }
   const batchId = new ObjectID(req.body._id);
+  const thatTime = new Date();
+  const thatUser = req.user._id;
   co(function*() {
     const db = yield dbX.dbPromise;
-    const patchedAt = (new Date()).toISOString();
-    const patchedBy = req.user._id;
+    const patchedAt = thatTime;
+    const patchedBy = thatUser;
 
+    const patches0 = req.body.patches;
+    const patchCompletedAt = patches0.find(p => p.path.indexOf('completedAt') > -1);
+    const completedAt = patchCompletedAt.value;
+    const patchesWithoutCompletedAt = patches0.filter(p => p.path.indexOf('completedAt') === -1);
     const patches = {patches: [
-      ...req.body.patches,
-      {op: 'replace', path: '/modifiedAt', value: patchedAt},
-      {op: 'replace', path: '/modifiedBy', value: patchedBy}
+      ...patchesWithoutCompletedAt,
+      {op: 'replace', path: '/completedAt', value: new Date(completedAt)},
+      {op: 'replace', path: '/modifiedAt', value: thatTime},
+      {op: 'replace', path: '/modifiedBy', value: thatUser}
     ]};
-    patches.createdAt = patchedAt;
-    patches.createdBy = patchedBy;
+    patches.createdAt = thatTime;
+    patches.createdBy = thatUser;
     patches.batchId = batchId;
 
     const patchesToApply = toMongodb(patches.patches);
@@ -316,12 +327,12 @@ const rootGet = (req, res) => {
           .find({$or: [
             {
               completed: true,
-              completedAt: {'$gte': `${thirtyFiveDaysAgoDate}T16:00:00.000Z`}
+              completedAt: {'$gte': new Date(`${thirtyFiveDaysAgoDate}T16:00:00.000Z`)}
             },
             {
               completed: true,
               completedAt: {$exists: false},
-              modifiedAt: {'$gte': `${thirtyFiveDaysAgoDate}T16:00:00.000Z`}
+              modifiedAt: {'$gte': new Date(`${thirtyFiveDaysAgoDate}T16:00:00.000Z`)}
             },
           ]})
           .sort({'createdAt': -1})
@@ -336,6 +347,8 @@ const rootGet = (req, res) => {
 
 
 }
+
+
 router.get('/', rootGet);
 router.post('/', rootPost);
 router.patch('/', rootPatch);
